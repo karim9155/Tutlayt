@@ -7,7 +7,7 @@ import { logout } from "@/app/auth/actions"
 import { CreditCard, Plus, Calendar, Search, AlertCircle } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 
-export default async function CompanyDashboard() {
+export default async function ClientDashboard() {
   const supabase = await createClient()
 
   const {
@@ -47,7 +47,7 @@ export default async function CompanyDashboard() {
     <div className="space-y-8 p-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[var(--deep-navy)]">Company Dashboard</h1>
+          <h1 className="text-3xl font-bold text-[var(--deep-navy)]">Client Dashboard</h1>
           <p className="text-gray-500 mt-1">Manage your bookings and credits.</p>
         </div>
         <div className="flex items-center gap-4">
@@ -73,7 +73,7 @@ export default async function CompanyDashboard() {
             <h4 className="font-semibold text-amber-800">Profile Incomplete</h4>
             <p className="text-sm text-amber-700 mt-1">
               Please complete your profile by adding your <strong>Fiscal ID</strong> to enable invoicing.
-              <Link href="/dashboard/company/profile" className="font-bold underline ml-2 hover:text-amber-900">
+              <Link href="/dashboard/client/profile" className="font-bold underline ml-2 hover:text-amber-900">
                 Update Profile
               </Link>
             </p>
@@ -88,7 +88,7 @@ export default async function CompanyDashboard() {
               <CardTitle className="text-[var(--deep-navy)]">Active Bookings</CardTitle>
               <CardDescription className="text-gray-500">Your recent and upcoming missions.</CardDescription>
             </div>
-            <Link href="/dashboard/company/bookings">
+            <Link href="/dashboard/client/bookings">
               <Button variant="ghost" size="sm" className="text-[var(--teal)] hover:text-[var(--teal-blue)] hover:bg-[var(--teal)]/10">
                 View All
               </Button>
@@ -132,7 +132,7 @@ export default async function CompanyDashboard() {
                 </div>
                 <h3 className="text-lg font-medium text-[var(--deep-navy)]">No bookings yet</h3>
                 <p className="text-gray-500 mt-1 mb-6">Get started by finding an interpreter for your needs.</p>
-                <Link href="/search">
+                <Link href="/dashboard/search">
                   <Button className="bg-[var(--deep-navy)] text-white hover:bg-[var(--dark-blue)]">
                     <Search className="mr-2 h-4 w-4" /> Find Interpreters
                   </Button>
@@ -148,12 +148,12 @@ export default async function CompanyDashboard() {
               <CardTitle className="text-white">Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Link href="/search" className="block">
+              <Link href="/dashboard/search" className="block">
                 <Button variant="secondary" className="w-full justify-start bg-white/10 text-white hover:bg-white/20 border-0 h-12">
                   <Search className="mr-2 h-4 w-4" /> Find Interpreter
                 </Button>
               </Link>
-              <Link href="/dashboard/company/profile" className="block">
+              <Link href="/dashboard/client/profile" className="block">
                 <Button variant="secondary" className="w-full justify-start bg-white/10 text-white hover:bg-white/20 border-0 h-12">
                   Edit Profile
                 </Button>

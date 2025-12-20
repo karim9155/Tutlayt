@@ -22,14 +22,14 @@
   --popover: #FFFFFF;
   --popover-foreground: #0E133C;
   
-  --primary: #0E133C; /* Deep Navy */
-  --primary-foreground: #FFFFFF;
+  --primary: #64C6C2; /* Soft Turquoise */
+  --primary-foreground: #0E133C; /* Deep Navy for contrast */
   
-  --secondary: #64C6C2; /* Light Teal */
-  --secondary-foreground: #0E133C;
+  --secondary: #4FA2A7; /* Darker Turquoise */
+  --secondary-foreground: #FFFFFF;
   
-  --muted: #F1F5F9;
-  --muted-foreground: #64748B;
+  --muted: #E8F5F6; /* Azureish White */
+  --muted-foreground: #2E5B73; /* Medium Blue */
   
   --accent: #E8F5F6; /* Azureish White for hover states */
   --accent-foreground: #0E133C;
@@ -37,8 +37,8 @@
   --destructive: #EF4444;
   --destructive-foreground: #FFFFFF;
   
-  --border: #E2E8F0; /* Subtle border */
-  --input: #E2E8F0;
+  --border: #3F818E; /* Teal Blue for borders */
+  --input: #3F818E;
   --ring: #4FA2A7;
   
   --radius: 0.75rem; /* More rounded */

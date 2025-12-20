@@ -1,4 +1,4 @@
-export default function CompanySettingsPage() {
+export default function ClientSettingsPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold text-[var(--deep-navy)]">Settings</h1>

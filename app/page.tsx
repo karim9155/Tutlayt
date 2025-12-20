@@ -27,7 +27,7 @@ export default function LandingPage() {
                 and celebrate the art of language.
               </h1>
               
-              <p className="mx-auto mt-8 max-w-2xl text-xl leading-relaxed text-gray-600 mb-12 font-light">
+              <p className="mx-auto mt-8 max-w-2xl text-xl leading-relaxed text-[var(--medium-blue)] mb-12 font-light">
                 Connect with certified interpreters and translators who bridge cultures with precision, ethics, and a human touch.
               </p>
 
@@ -41,7 +41,8 @@ export default function LandingPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="interpretation">Interpretation</SelectItem>
-                        <SelectItem value="translation">Sworn Translation</SelectItem>
+                        <SelectItem value="translation">Translation</SelectItem>
+                        <SelectItem value="sworn_translation">Sworn Translation</SelectItem>
                         <SelectItem value="proofreading">Proofreading</SelectItem>
                       </SelectContent>
                     </Select>
@@ -100,7 +101,7 @@ export default function LandingPage() {
               <h2 className="text-3xl font-bold tracking-tight text-[var(--deep-navy)] sm:text-4xl mb-6">
                 Our Expertise
               </h2>
-              <p className="text-lg text-gray-600 font-light">
+              <p className="text-lg text-[var(--medium-blue)] font-light">
                 Comprehensive language solutions tailored to your specific industry needs.
               </p>
             </div>
@@ -128,7 +129,7 @@ export default function LandingPage() {
                     <service.icon className="h-7 w-7" />
                   </div>
                   <h3 className="text-xl font-bold text-[var(--deep-navy)] mb-3">{service.title}</h3>
-                  <p className="text-gray-600 leading-relaxed">
+                  <p className="text-[var(--medium-blue)] leading-relaxed">
                     {service.desc}
                   </p>
                 </div>
@@ -164,7 +165,7 @@ export default function LandingPage() {
                 <h2 className="text-3xl md:text-4xl font-bold mb-6 leading-tight">
                   "Language is not just about words. It's about understanding, empathy, and connection."
                 </h2>
-                <div className="space-y-6 text-gray-300 text-lg font-light leading-relaxed mb-8">
+                <div className="space-y-6 text-[var(--azureish-white)]/80 text-lg font-light leading-relaxed mb-8">
                   <p>
                     At Tutlayt, we believe in the power of human connection. Our mission is to provide ethical, fair, and efficient language services that respect the nuance of every interaction.
                   </p>
@@ -187,11 +188,11 @@ export default function LandingPage() {
             <h2 className="text-4xl font-bold text-[var(--deep-navy)] mb-6">
               Ready to bridge the gap?
             </h2>
-            <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto font-light">
+            <p className="text-xl text-[var(--medium-blue)] mb-10 max-w-2xl mx-auto font-light">
               Join a community that values quality, ethics, and professional growth.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/signup?role=company">
+              <Link href="/signup?role=client">
                 <Button size="lg" className="bg-[var(--deep-navy)] text-white hover:bg-[var(--dark-blue)] rounded-full px-10 h-14 font-bold shadow-xl shadow-blue-900/10 transition-all hover:shadow-blue-900/20">
                   Hire a Professional
                 </Button>

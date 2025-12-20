@@ -1,11 +1,12 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import Link from "next/link"
-import { AvailabilityCalendar } from "@/components/availability-calendar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { logout } from "@/app/auth/actions"
 import { Wallet, AlertCircle, Briefcase, Calendar, Star, User, Settings } from "lucide-react"
+import { PolicyUploadCard } from "@/components/policy-upload-card"
+import { getInterpreterReviews, calculateReviewStats } from "@/lib/reviews"
 
 export default async function InterpreterDashboard() {
   const supabase = await createClient()
@@ -21,7 +22,7 @@ export default async function InterpreterDashboard() {
   // Verify role
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("role, full_name, email, avatar_url")
     .eq("id", user.id)
     .single()
 
@@ -32,7 +33,7 @@ export default async function InterpreterDashboard() {
   // Fetch interpreter details and bookings
   const { data: interpreter } = await supabase
     .from("interpreters")
-    .select("wallet_balance, verified, languages, specializations")
+    .select("*")
     .eq("id", user.id)
     .single()
 
@@ -42,6 +43,16 @@ export default async function InterpreterDashboard() {
     .eq("interpreter_id", user.id)
     .order("start_time", { ascending: true })
     .limit(5)
+
+  // Fetch stats
+  const reviews = await getInterpreterReviews(user.id)
+  const stats = calculateReviewStats(reviews)
+
+  const { count: completedMissionsCount } = await supabase
+    .from("bookings")
+    .select("*", { count: 'exact', head: true })
+    .eq("interpreter_id", user.id)
+    .eq("status", "completed")
 
   const isProfileComplete = interpreter?.languages?.length > 0 && interpreter?.specializations?.length > 0
 
@@ -127,16 +138,57 @@ export default async function InterpreterDashboard() {
             </Card>
           </section>
 
-          <section>
-             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-[var(--deep-navy)]">Availability</h2>
-            </div>
-            <Card className="border-gray-100 shadow-sm overflow-hidden">
-              <CardContent className="p-6">
-                <AvailabilityCalendar interpreterId={user.id} />
-              </CardContent>
-            </Card>
-          </section>
+          <Card className="border-gray-100 shadow-sm bg-white">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-[var(--deep-navy)] flex items-center justify-between">
+                <span>My Profile</span>
+                {interpreter?.verified && (
+                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">Verified</span>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="flex items-center gap-3">
+                 <div className="h-14 w-14 rounded-full bg-[var(--azureish-white)] flex items-center justify-center text-[var(--deep-navy)] font-bold text-xl border-2 border-white shadow-sm">
+                    {profile?.avatar_url ? (
+                      <img src={profile.avatar_url} alt={profile.full_name || "User"} className="h-full w-full rounded-full object-cover" />
+                    ) : (
+                      <span>{profile?.full_name?.[0] || "U"}</span>
+                    )}
+                 </div>
+                 <div>
+                    <h3 className="font-bold text-[var(--deep-navy)] text-lg leading-tight">{profile?.full_name || "Interpreter"}</h3>
+                    <p className="text-sm text-gray-500">{profile?.email}</p>
+                 </div>
+              </div>
+              
+              <div className="space-y-3 pt-2 border-t border-gray-100">
+                 <div className="flex justify-between text-sm items-start">
+                    <span className="text-gray-500 shrink-0">Active Langs (A)</span>
+                    <span className="font-medium text-[var(--deep-navy)] text-right">
+                        {interpreter?.languages_a?.length > 0 ? interpreter.languages_a.join(", ") : "Not set"}
+                    </span>
+                 </div>
+                 <div className="flex justify-between text-sm items-start">
+                    <span className="text-gray-500 shrink-0">Active Langs (B)</span>
+                    <span className="font-medium text-[var(--deep-navy)] text-right">
+                        {interpreter?.languages_b?.length > 0 ? interpreter.languages_b.join(", ") : "Not set"}
+                    </span>
+                 </div>
+                 <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Location</span>
+                    <span className="font-medium text-[var(--deep-navy)]">{interpreter?.city || "Not set"}</span>
+                 </div>
+                 <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Experience</span>
+                    <span className="font-medium text-[var(--deep-navy)]">{interpreter?.years_experience || 0} years</span>
+                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <PolicyUploadCard interpreter={interpreter} />
+
         </div>
 
         <div className="space-y-6">
@@ -150,15 +202,15 @@ export default async function InterpreterDashboard() {
             <CardContent className="space-y-6">
               <div className="flex justify-between items-center border-b border-white/10 pb-4">
                 <span className="text-blue-100">Rating</span>
-                <span className="font-bold text-xl">4.9/5.0</span>
+                <span className="font-bold text-xl">{stats.averageRating > 0 ? `${stats.averageRating}/5.0` : "N/A"}</span>
               </div>
               <div className="flex justify-between items-center border-b border-white/10 pb-4">
                 <span className="text-blue-100">Completed Missions</span>
-                <span className="font-bold text-xl">12</span>
+                <span className="font-bold text-xl">{completedMissionsCount || 0}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-blue-100">Response Rate</span>
-                <span className="font-bold text-xl">98%</span>
+                <span className="font-bold text-xl">100%</span>
               </div>
             </CardContent>
           </Card>

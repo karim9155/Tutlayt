@@ -11,7 +11,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12 bg-[var(--azureish-white)]">
       <div className="mb-8">
-        <Logo centered />
+        <Logo centered size="lg" />
       </div>
       <Card className="w-full max-w-md shadow-xl border-0 bg-white/80 backdrop-blur-sm">
         <CardHeader className="space-y-1 text-center">

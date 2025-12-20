@@ -30,6 +30,6 @@ export async function updateCompanyProfile(formData: FormData) {
     return { error: error.message }
   }
 
-  revalidatePath("/dashboard/company")
-  redirect("/dashboard/company")
+  revalidatePath("/dashboard/client")
+  return { success: true }
 }

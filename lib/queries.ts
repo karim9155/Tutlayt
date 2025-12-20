@@ -7,7 +7,10 @@ export async function getInterpreters(supabase: SupabaseClient, filters: { city?
       *,
       profiles (
         full_name,
-        avatar_url
+        avatar_url,
+        reviews:reviews!reviews_reviewee_id_fkey (
+          rating
+        )
       )
     `)
 
@@ -16,7 +19,7 @@ export async function getInterpreters(supabase: SupabaseClient, filters: { city?
   }
 
   if (filters.language) {
-    query = query.contains('languages', [filters.language])
+    query = query.or(`languages_a.cs.{${filters.language}},languages_b.cs.{${filters.language}},languages_c.cs.{${filters.language}}`)
   }
 
   if (filters.specialization) {

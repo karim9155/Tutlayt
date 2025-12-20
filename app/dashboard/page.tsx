@@ -21,7 +21,7 @@ export default async function DashboardPage() {
   if (profile?.role === "interpreter") {
     return redirect("/dashboard/interpreter")
   } else if (profile?.role === "company") {
-    return redirect("/dashboard/company")
+    return redirect("/dashboard/client")
   } else {
     // Fallback or admin
     return (

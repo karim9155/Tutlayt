@@ -27,17 +27,18 @@ CREATE TABLE IF NOT EXISTS public.bookings (
 );
 
 -- Create reviews table
-CREATE TABLE IF NOT EXISTS public.reviews (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  booking_id UUID REFERENCES public.bookings(id) ON DELETE CASCADE NOT NULL,
-  rating INTEGER CHECK (rating >= 1 AND rating <= 5),
-  comment TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
-);
+-- Reviews table moved to 009_setup_reviews.sql
+-- CREATE TABLE IF NOT EXISTS public.reviews (
+--   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+--   booking_id UUID REFERENCES public.bookings(id) ON DELETE CASCADE NOT NULL,
+--   rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+--   comment TEXT,
+--   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+-- );
 
 -- Enable RLS for new tables
 ALTER TABLE public.bookings ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.reviews ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE public.reviews ENABLE ROW LEVEL SECURITY;
 
 -- Booking policies
 CREATE POLICY "Companies can view their own bookings" ON public.bookings

@@ -18,9 +18,18 @@ interface Availability {
   is_booked: boolean
 }
 
+interface Booking {
+  id: string
+  title: string
+  start_time: string
+  end_time: string
+  status: string
+}
+
 export function AvailabilityCalendar({ interpreterId, readOnly = false }: { interpreterId: string, readOnly?: boolean }) {
   const [date, setDate] = useState<Date | undefined>(new Date())
   const [availabilities, setAvailabilities] = useState<Availability[]>([])
+  const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(false)
   const [startTime, setStartTime] = useState("09:00")
   const [endTime, setEndTime] = useState("17:00")
@@ -37,18 +46,41 @@ export function AvailabilityCalendar({ interpreterId, readOnly = false }: { inte
     setLoading(true)
     const formattedDate = format(selectedDate, "yyyy-MM-dd")
     
-    const { data, error } = await supabase
+    // Fetch Availability Slots
+    const { data: availData, error: availError } = await supabase
       .from("availability")
       .select("*")
       .eq("interpreter_id", interpreterId)
       .eq("date", formattedDate)
       .order("start_time")
 
-    if (error) {
-      console.error("Error fetching availability:", error)
-    } else {
-      setAvailabilities(data || [])
+    if (availError) console.error("Error fetching availability:", availError)
+    else setAvailabilities(availData || [])
+
+    // Fetch Bookings (if not readOnly, or if we want to show booked slots to interpreter)
+    // Assuming readOnly is for public profile, where we might not want to show job titles (privacy).
+    // But user asked for "interpreter account", so readOnly=false usually.
+    if (!readOnly) {
+      // We need to filter bookings that overlap with this day.
+      // Since start_time is timestamptz, we need to query range.
+      const startOfDay = new Date(selectedDate)
+      startOfDay.setHours(0, 0, 0, 0)
+      const endOfDay = new Date(selectedDate)
+      endOfDay.setHours(23, 59, 59, 999)
+
+      const { data: bookingData, error: bookingError } = await supabase
+        .from("bookings")
+        .select("id, title, start_time, end_time, status")
+        .eq("interpreter_id", interpreterId)
+        .eq("status", "accepted") // Only show accepted bookings as "Booked"
+        .gte("start_time", startOfDay.toISOString())
+        .lte("start_time", endOfDay.toISOString())
+        .order("start_time")
+
+      if (bookingError) console.error("Error fetching bookings:", bookingError)
+      else setBookings(bookingData || [])
     }
+
     setLoading(false)
   }
 
@@ -128,6 +160,23 @@ export function AvailabilityCalendar({ interpreterId, readOnly = false }: { inte
             </div>
           ) : (
             <div className="space-y-3">
+              {/* Render Bookings */}
+              {bookings.map((booking) => (
+                <div key={booking.id} className="flex flex-col p-3 bg-blue-50 rounded-md border border-blue-200">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-bold text-blue-800 text-sm">{booking.title}</span>
+                    <span className="text-xs bg-blue-200 text-blue-800 px-2 py-0.5 rounded-full">Booked</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                    <span className="font-medium text-blue-900">
+                      {format(new Date(booking.start_time), "HH:mm")} - {format(new Date(booking.end_time), "HH:mm")}
+                    </span>
+                  </div>
+                </div>
+              ))}
+
+              {/* Render Availability Slots */}
               {availabilities.length > 0 ? (
                 availabilities.map((slot) => (
                   <div key={slot.id} className="flex items-center justify-between p-3 bg-[var(--azureish-white)] rounded-md border border-blue-100">
@@ -150,7 +199,7 @@ export function AvailabilityCalendar({ interpreterId, readOnly = false }: { inte
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500 text-center py-4 italic">No availability set for this date.</p>
+                bookings.length === 0 && <p className="text-gray-500 text-center py-4 italic">No availability set for this date.</p>
               )}
             </div>
           )}

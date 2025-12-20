@@ -1,8 +1,8 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-import { InterpreterProfileForm } from "@/components/interpreter-profile-form"
+import { ClientProfileForm } from "@/components/client-profile-form"
 
-export default async function InterpreterProfilePage() {
+export default async function ClientProfilePage() {
   const supabase = await createClient()
 
   const {
@@ -19,8 +19,8 @@ export default async function InterpreterProfilePage() {
     .eq("id", user.id)
     .single()
 
-  const { data: interpreter } = await supabase
-    .from("interpreters")
+  const { data: company } = await supabase
+    .from("companies")
     .select("*")
     .eq("id", user.id)
     .single()
@@ -28,11 +28,11 @@ export default async function InterpreterProfilePage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-[var(--deep-navy)]">Edit Profile</h1>
-        <p className="text-[var(--medium-blue)]">Complete your profile to increase your visibility and get more missions.</p>
+        <h1 className="text-3xl font-bold text-[var(--deep-navy)]">Edit Client Profile</h1>
+        <p className="text-[var(--medium-blue)]">Update your organization details and billing information.</p>
       </div>
       
-      <InterpreterProfileForm profile={profile} interpreter={interpreter} />
+      <ClientProfileForm profile={profile} company={company} />
     </div>
   )
 }

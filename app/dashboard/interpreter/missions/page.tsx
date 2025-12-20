@@ -1,15 +1,35 @@
-export default function InterpreterMissionsPage() {
+import { createClient } from "@/lib/supabase/server"
+import { MissionList } from "@/components/mission-list"
+
+export default async function InterpreterMissionsPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) return null
+
+  const { data: missions, error } = await supabase
+    .from("bookings")
+    .select(`
+      *,
+      profiles:client_id (
+        full_name,
+        email,
+        avatar_url
+      )
+    `)
+    .eq("interpreter_id", user.id)
+    .order("created_at", { ascending: false })
+
+  if (error) {
+    console.error("Error fetching interpreter missions:", error)
+  }
+
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold text-[var(--deep-navy)]">My Missions</h1>
       <p className="text-gray-500">View your upcoming and past interpretation missions.</p>
-      <div className="p-12 border border-dashed border-gray-200 rounded-xl bg-white text-center">
-        <div className="mx-auto h-12 w-12 text-gray-300 mb-3 flex items-center justify-center bg-[var(--azureish-white)] rounded-full">
-           <span className="text-2xl">📋</span>
-        </div>
-        <h3 className="text-lg font-medium text-[var(--deep-navy)]">No missions found</h3>
-        <p className="text-gray-500 mt-1">Your mission history will appear here.</p>
-      </div>
+      
+      <MissionList missions={missions || []} />
     </div>
   )
 }

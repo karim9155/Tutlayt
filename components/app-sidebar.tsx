@@ -20,11 +20,11 @@ import { Button } from "@/components/ui/button"
 import { logout } from "@/app/auth/actions"
 import { Logo } from "@/components/logo"
 
-// Menu items for Company
-const companyItems = [
+// Menu items for Client
+const clientItems = [
   {
     title: "Dashboard",
-    url: "/dashboard/company",
+    url: "/dashboard/client",
     icon: Home,
   },
   {
@@ -34,17 +34,17 @@ const companyItems = [
   },
   {
     title: "My Bookings",
-    url: "/dashboard/company/bookings", // Assuming this route exists or will exist
+    url: "/dashboard/client/bookings",
     icon: Calendar,
   },
   {
     title: "Profile",
-    url: "/dashboard/company/profile",
+    url: "/dashboard/client/profile",
     icon: User,
   },
   {
     title: "Settings",
-    url: "/dashboard/company/settings",
+    url: "/dashboard/client/settings",
     icon: Settings,
   },
 ]
@@ -84,23 +84,23 @@ interface AppSidebarProps {
 
 export function AppSidebar({ role }: AppSidebarProps) {
   const pathname = usePathname()
-  const items = role === "interpreter" ? interpreterItems : companyItems
+  const items = role === "interpreter" ? interpreterItems : clientItems
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-[var(--teal)]/10 bg-white">
-      <SidebarHeader className="p-4 border-b border-[var(--teal)]/10">
-        <Logo className="justify-center" />
+    <Sidebar collapsible="icon" className="border-r border-white/10 bg-[var(--deep-navy)] text-white" variant="sidebar">
+      <SidebarHeader className="p-4 border-b border-white/10">
+        <Logo className="justify-center" variant="light" />
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-[var(--deep-navy)]/70">Menu</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-[var(--azureish-white)]/70">Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={pathname === item.url} tooltip={item.title} className="hover:bg-[var(--azureish-white)] hover:text-[var(--deep-navy)] data-[active=true]:bg-[var(--teal)]/10 data-[active=true]:text-[var(--deep-navy)]">
+                  <SidebarMenuButton asChild isActive={pathname === item.url} tooltip={item.title} className="text-[var(--azureish-white)] hover:bg-[var(--teal)]/20 hover:text-white data-[active=true]:bg-[var(--teal)] data-[active=true]:text-[var(--deep-navy)]">
                     <Link href={item.url}>
-                      <item.icon className="text-[var(--teal)]" />
+                      <item.icon className="text-[var(--teal)] group-data-[active=true]:text-[var(--deep-navy)]" />
                       <span className="font-medium">{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
@@ -110,11 +110,11 @@ export function AppSidebar({ role }: AppSidebarProps) {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-4 border-t border-[var(--teal)]/10">
+      <SidebarFooter className="p-4 border-t border-white/10">
         <SidebarMenu>
             <SidebarMenuItem>
                 <form action={logout}>
-                    <SidebarMenuButton type="submit" tooltip="Logout" className="hover:bg-red-50 hover:text-red-600">
+                    <SidebarMenuButton type="submit" tooltip="Logout" className="text-[var(--azureish-white)] hover:bg-red-900/20 hover:text-red-400">
                         <LogOut />
                         <span>Logout</span>
                     </SidebarMenuButton>

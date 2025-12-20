@@ -6,13 +6,14 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { signup } from "@/app/auth/actions"
 import { Logo } from "@/components/logo"
+import { ClientSignupForm } from "@/components/client-signup-form"
 
 export default async function SignupPage({ searchParams }: { searchParams: Promise<{ message: string, role: string }> }) {
   const { message, role } = await searchParams
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12 bg-[var(--azureish-white)]">
       <div className="mb-8">
-        <Logo centered />
+        <Logo centered size="lg" />
       </div>
       <Card className="w-full max-w-md shadow-xl border-0 bg-white/80 backdrop-blur-sm">
         <CardHeader className="space-y-1 text-center">
@@ -20,10 +21,10 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
           <CardDescription className="text-gray-500">Choose your account type to get started</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue={role === 'company' ? 'company' : 'interpreter'} className="w-full">
+          <Tabs defaultValue={role === 'company' || role === 'client' ? 'company' : 'interpreter'} className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-4 bg-[var(--azureish-white)]">
               <TabsTrigger value="interpreter" className="data-[state=active]:bg-[var(--teal)] data-[state=active]:text-white">Interpreter</TabsTrigger>
-              <TabsTrigger value="company" className="data-[state=active]:bg-[var(--deep-navy)] data-[state=active]:text-white">Company</TabsTrigger>
+              <TabsTrigger value="company" className="data-[state=active]:bg-[var(--deep-navy)] data-[state=active]:text-white">Client</TabsTrigger>
             </TabsList>
 
             <TabsContent value="interpreter">
@@ -50,26 +51,7 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
             </TabsContent>
 
             <TabsContent value="company">
-              <form action={signup}>
-                <input type="hidden" name="role" value="company" />
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="companyName" className="text-[var(--deep-navy)]">Company Name</Label>
-                    <Input id="companyName" name="fullName" placeholder="Acme Inc." required className="bg-white border-gray-200 focus:border-[var(--deep-navy)] focus:ring-[var(--deep-navy)]" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email-company" className="text-[var(--deep-navy)]">Email</Label>
-                    <Input id="email-company" name="email" type="email" placeholder="m@example.com" required className="bg-white border-gray-200 focus:border-[var(--deep-navy)] focus:ring-[var(--deep-navy)]" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="password-company" className="text-[var(--deep-navy)]">Password</Label>
-                    <Input id="password-company" name="password" type="password" required className="bg-white border-gray-200 focus:border-[var(--deep-navy)] focus:ring-[var(--deep-navy)]" />
-                  </div>
-                  <Button className="w-full mt-4 bg-[var(--deep-navy)] hover:bg-[var(--dark-blue)] text-white font-bold" type="submit">
-                    Sign Up as Company
-                  </Button>
-                </div>
-              </form>
+              <ClientSignupForm />
             </TabsContent>
           </Tabs>
           {message && (
