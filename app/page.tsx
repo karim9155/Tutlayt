@@ -149,7 +149,7 @@ export default function LandingPage() {
                    {/* Placeholder for Founder Image - using a generic pro image if specific one not available */}
                    <div className="w-full h-full bg-[var(--dark-blue)] flex items-center justify-center text-white/20">
                       <Image 
-                        src="/placeholder-user.jpg" 
+                        src="/images/ceo.png" 
                         alt="Mustapha Bouarrouj"
                         width={500}
                         height={500}
@@ -199,7 +199,7 @@ export default function LandingPage() {
               </Link>
               <Link href="/signup?role=interpreter">
                 <Button size="lg" variant="outline" className="border-[var(--deep-navy)] text-[var(--deep-navy)] hover:bg-[var(--deep-navy)] hover:text-white rounded-full px-10 h-14 font-bold bg-transparent transition-all">
-                  Join as Interpreter
+                  Join as an interpreter
                 </Button>
               </Link>
             </div>

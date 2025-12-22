@@ -54,13 +54,14 @@ export function BookingDialog({ interpreterId, interpreterName, hourlyRate }: Bo
         const durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60)
         
         if (durationHours > 0) {
-          const totalPrice = durationHours * hourlyRate
+          const rate = hourlyRate || 0
+          const totalPrice = durationHours * rate
           formData.append("price", totalPrice.toFixed(2))
         } else {
-           formData.append("price", hourlyRate.toString())
+           formData.append("price", (hourlyRate || 0).toString())
         }
       } else {
-         formData.append("price", hourlyRate.toString())
+         formData.append("price", (hourlyRate || 0).toString())
       }
 
       // Handle file upload if exists
