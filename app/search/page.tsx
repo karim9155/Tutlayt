@@ -3,10 +3,16 @@ import { createClient } from "@/lib/supabase/server"
 import { getInterpreters } from "@/lib/queries"
 import { SearchFilters } from "@/components/search-filters"
 import { InterpreterList } from "@/components/interpreter-list"
+import { redirect } from "next/navigation"
 
 export default async function SearchPage({ searchParams }: { searchParams: Promise<{ city?: string, language?: string, specialization?: string }> }) {
   const filters = await searchParams
   const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    redirect("/login")
+  }
 
   const { data: interpreters, error } = await getInterpreters(supabase, filters)
 

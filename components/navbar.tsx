@@ -45,7 +45,7 @@ export async function Navbar() {
             </>
           ) : (
             <>
-              <Link href="/search" className="text-sm font-medium text-[var(--deep-navy)] hover:text-[var(--teal)] transition-colors">
+              <Link href="/login" className="text-sm font-medium text-[var(--deep-navy)] hover:text-[var(--teal)] transition-colors">
                 Find a Pro
               </Link>
               <Link href="/signup?role=client" className="text-sm font-medium text-[var(--deep-navy)] hover:text-[var(--teal)] transition-colors">
