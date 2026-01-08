@@ -1,9 +1,17 @@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { CheckCircle2, Star, MapPin, Clock, ShieldCheck } from "lucide-react"
+import { CheckCircle2, Star, MapPin, Clock, ShieldCheck, Lock } from "lucide-react"
 import Link from "next/link"
 
-export function InterpreterList({ interpreters, basePath = "/interpreter" }: { interpreters: any[] | null, basePath?: string }) {
+export function InterpreterList({ 
+  interpreters, 
+  basePath = "/interpreter",
+  isClientVerified = true
+}: { 
+  interpreters: any[] | null, 
+  basePath?: string,
+  isClientVerified?: boolean
+}) {
   return (
     <div className="grid gap-6">
       {interpreters?.map((interpreter: any) => {
@@ -16,15 +24,23 @@ export function InterpreterList({ interpreters, basePath = "/interpreter" }: { i
           : "New"
         const reviewCount = ratings.length
 
+        // Access Control Logic
+        const displayName = isClientVerified 
+          ? interpreter.profiles?.full_name 
+          : "Interpreter (Verification Required)"
+        
+        const showAvatar = isClientVerified
+        const canViewProfile = isClientVerified
+
         return (
         <div key={interpreter.id} className="bg-white p-6 rounded-xl shadow-sm border border-[var(--teal)]/10 flex flex-col md:flex-row gap-6 hover:shadow-md transition-shadow">
           {/* Avatar */}
-          <div className="w-24 h-24 bg-[var(--azureish-white)] rounded-full flex-shrink-0 overflow-hidden border-2 border-[var(--teal)]/20 relative">
-            {interpreter.profiles?.avatar_url ? (
-              <img src={interpreter.profiles.avatar_url} alt={interpreter.profiles.full_name} className="w-full h-full object-cover" />
+          <div className="w-24 h-24 bg-[var(--azureish-white)] rounded-full flex-shrink-0 overflow-hidden border-2 border-[var(--teal)]/20 relative flex items-center justify-center">
+            {showAvatar && interpreter.profiles?.avatar_url ? (
+              <img src={interpreter.profiles.avatar_url} alt={displayName} className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-[var(--deep-navy)]">
-                {interpreter.profiles?.full_name?.[0] || "?"}
+              <div className="text-2xl font-bold text-[var(--deep-navy)]">
+                {showAvatar ? (interpreter.profiles?.full_name?.[0] || "?") : <Lock className="w-8 h-8 text-gray-400" />}
               </div>
             )}
             {interpreter.verified && (
@@ -39,10 +55,15 @@ export function InterpreterList({ interpreters, basePath = "/interpreter" }: { i
             <div className="flex justify-between items-start">
               <div>
                 <h2 className="text-xl font-bold text-[var(--deep-navy)] flex items-center gap-2">
-                  {interpreter.profiles?.full_name}
+                  {displayName}
                   {interpreter.verified && (
                     <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
                       <ShieldCheck className="w-3 h-3" /> Verified
+                    </span>
+                  )}
+                  {interpreter.sworn_verified && (
+                    <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+                      <ShieldCheck className="w-3 h-3" /> Sworn Translator
                     </span>
                   )}
                 </h2>
@@ -93,6 +114,7 @@ export function InterpreterList({ interpreters, basePath = "/interpreter" }: { i
                       {lang}
                     </Badge>
                   ))}
+
                 </div>
               )}
               
@@ -116,9 +138,22 @@ export function InterpreterList({ interpreters, basePath = "/interpreter" }: { i
             </p>
 
             <div className="mt-6 flex gap-3">
-              <Link href={`${basePath}/${interpreter.id}`} className="flex-1">
-                <Button className="w-full bg-[var(--teal)] hover:bg-[var(--teal)]/90 text-white shadow-md shadow-teal-900/10">View Profile</Button>
-              </Link>
+              {canViewProfile ? (
+                 <Link href={`${basePath}/${interpreter.id}`} className="flex-1">
+                   <Button className="w-full bg-[var(--teal)] hover:bg-[var(--teal)]/90 text-white shadow-md shadow-teal-900/10">
+                     View Profile
+                   </Button>
+                 </Link>
+              ) : (
+                <div className="flex-1">
+                  <Link href="/dashboard/client">
+                    <Button variant="outline" className="w-full border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:text-amber-800">
+                      <Lock className="w-3 h-3 mr-2" />
+                      Verify to View & Book
+                    </Button>
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         </div>

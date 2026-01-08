@@ -26,5 +26,8 @@ export async function getInterpreters(supabase: SupabaseClient, filters: { city?
     query = query.contains('specializations', [filters.specialization])
   }
   
+  // Only show verified interpreters who have completed their documentation
+  query = query.eq('verified', true)
+
   return await query
 }

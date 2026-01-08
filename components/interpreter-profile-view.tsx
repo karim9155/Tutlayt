@@ -44,6 +44,11 @@ export function InterpreterProfileView({ interpreter, reviews = [], stats = { av
                           <ShieldCheck className="w-4 h-4" /> Verified
                         </span>
                       )}
+                      {interpreter.sworn_verified && (
+                        <span className="text-sm bg-amber-100 text-amber-700 px-2 py-1 rounded-full font-medium flex items-center gap-1 shadow-sm">
+                          <ShieldCheck className="w-4 h-4" /> Sworn Translator
+                        </span>
+                      )}
                     </h1>
                     <div className="flex flex-wrap items-center gap-4 text-[var(--medium-blue)] mt-2 text-sm font-medium">
                       <div className="flex items-center gap-1.5">

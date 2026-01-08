@@ -77,7 +77,7 @@ export function BookingDialog({ interpreterId, interpreterName, hourlyRate }: Bo
         const filePath = `${user.id}/${fileName}`
 
         const { error: uploadError, data } = await supabase.storage
-          .from('documents')
+          .from('client-documents')
           .upload(filePath, file)
 
         if (uploadError) {
@@ -86,7 +86,7 @@ export function BookingDialog({ interpreterId, interpreterName, hourlyRate }: Bo
         }
 
         const { data: { publicUrl } } = supabase.storage
-          .from('documents')
+          .from('client-documents')
           .getPublicUrl(filePath)
 
         formData.append("preparationMaterialsUrl", publicUrl)

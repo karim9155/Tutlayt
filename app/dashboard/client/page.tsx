@@ -4,8 +4,10 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { logout } from "@/app/auth/actions"
-import { CreditCard, Plus, Calendar, Search, AlertCircle } from "lucide-react"
+import { CreditCard, Plus, Calendar, Search, AlertCircle, ShieldAlert } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { ClientDocumentSigning } from "@/components/client-document-signing"
+import { getClientTemplates } from "@/lib/documents"
 
 export default async function ClientDashboard() {
   const supabase = await createClient()
@@ -32,9 +34,30 @@ export default async function ClientDashboard() {
   // Fetch company details and bookings
   const { data: company } = await supabase
     .from("companies")
-    .select("credits, fiscal_id")
+    .select("credits, fiscal_id, verification_status, documents, id")
     .eq("id", user.id)
     .single()
+
+  const isVerified = company?.verification_status === 'verified'
+
+  if (!isVerified) {
+      const templates = await getClientTemplates()
+      return (
+          <div className="container mx-auto py-10 px-4 max-w-4xl space-y-8">
+              <div className="flex flex-col gap-4">
+                  <h1 className="text-3xl font-bold text-[var(--deep-navy)]">Account Verification</h1>
+                  <div className="bg-amber-50 border border-amber-200 text-amber-900 px-4 py-3 rounded-md flex gap-2 items-start">
+                      <ShieldAlert className="h-5 w-5 mt-0.5 shrink-0" />
+                      <div>
+                          <p className="font-semibold">Complete your onboarding</p>
+                          <p className="text-sm">You must sign the required documents and be approved by an administrator before you can book interpreters.</p>
+                      </div>
+                  </div>
+              </div>
+              <ClientDocumentSigning company={company} templates={templates} />
+          </div>
+      )
+  }
 
   const { data: bookings } = await supabase
     .from("bookings")

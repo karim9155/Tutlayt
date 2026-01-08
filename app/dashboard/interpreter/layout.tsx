@@ -18,15 +18,18 @@ export default async function InterpreterLayout({
 
   const { data: interpreter } = await supabase
     .from("interpreters")
-    .select("verified, signed_policy_url")
+    .select("verified, signed_policy_url, documents")
     .eq("id", user.id)
     .single()
+  
+  // Check if at least one doc is uploaded OR the legacy signed_policy_url exists
+  const hasUploadedPolicy = !!interpreter?.signed_policy_url || (interpreter?.documents && Object.keys(interpreter.documents).length > 0)
 
   return (
     <div className="flex flex-col min-h-full">
       <VerificationBanner 
         isVerified={interpreter?.verified || false} 
-        hasUploadedPolicy={!!interpreter?.signed_policy_url} 
+        hasUploadedPolicy={hasUploadedPolicy} 
       />
       <div className="flex-1">
         {children}

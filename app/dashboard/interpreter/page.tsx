@@ -7,6 +7,7 @@ import { logout } from "@/app/auth/actions"
 import { Wallet, AlertCircle, Briefcase, Calendar, Star, User, Settings } from "lucide-react"
 import { PolicyUploadCard } from "@/components/policy-upload-card"
 import { getInterpreterReviews, calculateReviewStats } from "@/lib/reviews"
+import { getInterpreterTemplates, getSwornTranslatorTemplates } from "@/lib/documents"
 
 export default async function InterpreterDashboard() {
   const supabase = await createClient()
@@ -36,6 +37,10 @@ export default async function InterpreterDashboard() {
     .select("*")
     .eq("id", user.id)
     .single()
+
+  // Fetch Templates
+  const templates = await getInterpreterTemplates()
+  const swornTemplates = await getSwornTranslatorTemplates()
 
   const { data: bookings } = await supabase
     .from("bookings")
@@ -187,7 +192,7 @@ export default async function InterpreterDashboard() {
             </CardContent>
           </Card>
 
-          <PolicyUploadCard interpreter={interpreter} />
+          <PolicyUploadCard interpreter={interpreter} templates={templates} swornTemplates={swornTemplates} />
 
         </div>
 
