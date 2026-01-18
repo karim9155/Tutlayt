@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useState, useRef } from "react"
-import { uploadDocument, deleteDocument } from "./actions"
+import { uploadDocument, deleteDocument } from "@/app/admin/actions"
 import { toast } from "sonner"
 import { FileText, Trash2, Download, Upload, Loader2, ExternalLink } from "lucide-react"
 

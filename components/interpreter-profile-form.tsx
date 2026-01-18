@@ -11,7 +11,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { updateProfile } from "@/app/dashboard/interpreter/profile/actions"
 import { toast } from "sonner"
-import { Loader2 } from "lucide-react"
+import { Loader2, CheckCircle2, Plus, Trash2 } from "lucide-react"
 import { TagInput } from "@/components/ui/tag-input"
 
 interface InterpreterProfileFormProps {
@@ -22,8 +22,36 @@ interface InterpreterProfileFormProps {
 export function InterpreterProfileForm({ profile, interpreter }: InterpreterProfileFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState("basic")
+  
+  // Initialize from history array, or fallback to legacy single fields if history is empty
+  const [educationHistory, setEducationHistory] = useState<any[]>(
+      (interpreter?.education_history && interpreter.education_history.length > 0) 
+      ? interpreter.education_history 
+      : (interpreter?.highest_education ? [{
+          degree: interpreter.highest_education,
+          school: interpreter.school,
+          year: interpreter.graduation_date,
+          isInterpretation: interpreter.interpretation_degree
+      }] : [])
+  )
 
-  const tabs = ["basic", "professional", "education", "contact"]
+  const addEducation = () => {
+      setEducationHistory([...educationHistory, { degree: "", school: "", year: "", isInterpretation: false }])
+  }
+
+  const removeEducation = (index: number) => {
+      const newHistory = [...educationHistory]
+      newHistory.splice(index, 1)
+      setEducationHistory(newHistory)
+  }
+
+  const updateEducation = (index: number, field: string, value: any) => {
+      const newHistory = [...educationHistory]
+      newHistory[index] = { ...newHistory[index], [field]: value }
+      setEducationHistory(newHistory)
+  }
+
+  const tabs = ["basic", "professional", "education", "documents", "contact"]
   const currentIndex = tabs.indexOf(activeTab)
 
   const handleNext = () => {
@@ -82,10 +110,16 @@ export function InterpreterProfileForm({ profile, interpreter }: InterpreterProf
               3. Education
             </TabsTrigger>
             <TabsTrigger 
+              value="documents" 
+              className="flex-1 data-[state=active]:bg-[var(--teal)] data-[state=active]:text-white py-3 rounded-md transition-all"
+            >
+              4. Documents
+            </TabsTrigger>
+            <TabsTrigger 
               value="contact" 
               className="flex-1 data-[state=active]:bg-[var(--teal)] data-[state=active]:text-white py-3 rounded-md transition-all"
             >
-              4. Contact
+              5. Contact
             </TabsTrigger>
           </TabsList>
         </div>
@@ -178,6 +212,52 @@ export function InterpreterProfileForm({ profile, interpreter }: InterpreterProf
                   <Label htmlFor="signInterpreter" className="text-[var(--deep-navy)]">Sign Interpreter</Label>
                 </div>
 
+                {/* Sworn Translator Section */}
+                <div className="space-y-4 pt-4 border-t border-gray-100">
+                    <div className="flex items-center space-x-2">
+                       <Checkbox id="isSworn" name="isSworn" defaultChecked={interpreter?.is_sworn} />
+                       <Label htmlFor="isSworn" className="text-[var(--deep-navy)] font-semibold">I am a Sworn Translator</Label>
+                    </div>
+
+                    <div className="pl-6 space-y-4">
+                        <div className="text-sm text-slate-500">
+                            Check this if you are officially sworn/certified by a court or government body. You will need to upload proof.
+                        </div>
+
+                        {interpreter?.sworn_verified && (
+                             <div className="bg-green-50 text-green-700 p-3 rounded-md text-sm flex items-center">
+                                <CheckCircle2 className="w-4 h-4 mr-2" />
+                                Your sworn status is verified.
+                             </div>
+                        )}
+
+                        {interpreter?.sworn_rejection_reason && !interpreter?.sworn_verified && interpreter?.is_sworn && (
+                             <div className="bg-red-50 text-red-700 p-3 rounded-md text-sm">
+                                <span className="font-semibold block mb-1">Sworn Status Rejected:</span>
+                                {interpreter.sworn_rejection_reason}
+                             </div>
+                        )}
+
+                        <div className="space-y-2">
+                            <Label htmlFor="swornDocument" className="text-[var(--deep-navy)]">Sworn Certificate / Proof</Label>
+                            <Input 
+                                id="swornDocument" 
+                                name="swornDocument" 
+                                type="file" 
+                                accept=".pdf,.jpg,.jpeg,.png"
+                                className="cursor-pointer"
+                            />
+                            {interpreter?.documents?.sworn_proof && (
+                                <div className="text-xs text-blue-600 mt-1">
+                                    <a href={interpreter.documents.sworn_proof} target="_blank" rel="noopener noreferrer" className="underline">
+                                        View current uploaded proof
+                                    </a>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="bio" className="text-[var(--deep-navy)]">Professional Summary</Label>
                   <Textarea 
@@ -202,15 +282,39 @@ export function InterpreterProfileForm({ profile, interpreter }: InterpreterProf
                       className="border-gray-200 focus:border-[var(--teal)] focus:ring-[var(--teal)] rounded-lg bg-[var(--azureish-white)]/50"
                     />
                   </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="hourlyRate" className="text-[var(--deep-navy)]">Hourly Rate (TND)</Label>
+                    <Label htmlFor="dailyRate" className="text-[var(--deep-navy)]">Daily Rate (TND)</Label>
                     <Input 
-                      id="hourlyRate" 
-                      name="hourlyRate" 
+                      id="dailyRate" 
+                      name="dailyRate" 
                       type="number"
-                      defaultValue={interpreter?.hourly_rate} 
+                      defaultValue={interpreter?.daily_rate} 
                       className="border-gray-200 focus:border-[var(--teal)] focus:ring-[var(--teal)] rounded-lg bg-[var(--azureish-white)]/50"
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="dailyRateInternational" className="text-[var(--deep-navy)]">Daily Rate (International)</Label>
+                    <div className="flex gap-2">
+                        <Input 
+                          id="dailyRateInternational" 
+                          name="dailyRateInternational" 
+                          type="number"
+                          defaultValue={interpreter?.daily_rate_international} 
+                          className="border-gray-200 focus:border-[var(--teal)] focus:ring-[var(--teal)] rounded-lg bg-[var(--azureish-white)]/50 flex-1"
+                        />
+                         <Select name="currencyInternational" defaultValue={interpreter?.currency_international || "USD"}>
+                            <SelectTrigger className="w-[80px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="USD">USD</SelectItem>
+                              <SelectItem value="EUR">EUR</SelectItem>
+                            </SelectContent>
+                          </Select>
+                    </div>
                   </div>
                 </div>
 
@@ -236,6 +340,17 @@ export function InterpreterProfileForm({ profile, interpreter }: InterpreterProf
                   />
                 </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="equipment" className="text-[var(--deep-navy)]">Equipment (e.g. Booth, Headsets)</Label>
+                  <TagInput 
+                    id="equipment" 
+                    name="equipment" 
+                    placeholder="e.g. Interpreting Console (Press Enter)"
+                    defaultTags={interpreter?.equipment || []} 
+                    className="border-gray-200 focus-within:border-[var(--teal)] focus-within:ring-[var(--teal)] rounded-lg bg-[var(--azureish-white)]/50"
+                  />
+                </div>
+
                 <div className="flex items-center space-x-2 py-2">
                   <Checkbox id="aiicMember" name="aiicMember" defaultChecked={interpreter?.aiic_member} />
                   <Label htmlFor="aiicMember" className="text-[var(--deep-navy)]">AIIC Member</Label>
@@ -255,47 +370,129 @@ export function InterpreterProfileForm({ profile, interpreter }: InterpreterProf
 
             {/* Education Tab */}
             <div className={activeTab === "education" ? "block space-y-6" : "hidden"}>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="highestEducation" className="text-[var(--deep-navy)]">Highest Education Degree</Label>
-                  <Select name="highestEducation" defaultValue={interpreter?.highest_education}>
-                    <SelectTrigger className="border-gray-200 focus:border-[var(--teal)] focus:ring-[var(--teal)] rounded-lg bg-[var(--azureish-white)]/50">
-                      <SelectValue placeholder="Select degree" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="bachelor">Bachelor's Degree</SelectItem>
-                      <SelectItem value="master">Master's Degree</SelectItem>
-                      <SelectItem value="phd">PhD / Doctorate</SelectItem>
-                      <SelectItem value="diploma">Diploma / Certificate</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
+              <input type="hidden" name="educationHistory" value={JSON.stringify(educationHistory)} />
+              
+              <div className="space-y-6">
+                 {educationHistory.map((edu, index) => (
+                    <div key={index} className="p-4 border border-gray-200 rounded-lg bg-slate-50 relative">
+                        <Button 
+                            type="button" 
+                            variant="ghost" 
+                            size="sm" 
+                            className="absolute top-2 right-2 text-red-500 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => removeEducation(index)}
+                        >
+                            <Trash2 className="w-4 h-4" />
+                        </Button>
+                        
+                        <div className="grid grid-cols-1 gap-4">
+                            <div className="space-y-2">
+                              <Label className="text-[var(--deep-navy)]">Degree Level</Label>
+                              <Select 
+                                value={edu.degree} 
+                                onValueChange={(val) => updateEducation(index, 'degree', val)}
+                              >
+                                <SelectTrigger className="bg-white">
+                                  <SelectValue placeholder="Select degree" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="bachelor">Bachelor's Degree</SelectItem>
+                                  <SelectItem value="master">Master's Degree</SelectItem>
+                                  <SelectItem value="phd">PhD / Doctorate</SelectItem>
+                                  <SelectItem value="diploma">Diploma / Certificate</SelectItem>
+                                  <SelectItem value="other">Other</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label className="text-[var(--deep-navy)]">School / University</Label>
+                              <Input 
+                                value={edu.school || ''} 
+                                onChange={(e) => updateEducation(index, 'school', e.target.value)}
+                                className="bg-white"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label className="text-[var(--deep-navy)]">Graduation Date</Label>
+                              <Input 
+                                type="date"
+                                value={edu.year || ''} 
+                                onChange={(e) => updateEducation(index, 'year', e.target.value)}
+                                className="bg-white"
+                              />
+                            </div>
+
+                            <div className="flex items-center space-x-2 py-2">
+                              <Checkbox 
+                                id={`interpretation-${index}`} 
+                                checked={edu.isInterpretation} 
+                                onCheckedChange={(checked) => updateEducation(index, 'isInterpretation', checked === true)}
+                              />
+                              <Label htmlFor={`interpretation-${index}`} className="text-[var(--deep-navy)]">Interpretation Degree</Label>
+                            </div>
+                        </div>
+                    </div>
+                 ))}
+
+                 <Button type="button" onClick={addEducation} variant="outline" className="w-full border-dashed border-2">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Another Degree
+                 </Button>
+              </div>
+            </div>
+
+            {/* Documents Tab */}
+            <div className={activeTab === "documents" ? "block space-y-6" : "hidden"}>
+              <div className="space-y-6">
+                <div className="space-y-4 border-b border-gray-100 pb-4">
+                    <h3 className="font-semibold text-[var(--deep-navy)]">Professional Documents</h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <Label htmlFor="cvDocument" className="text-[var(--deep-navy)]">Curriculum Vitae (CV)</Label>
+                            <Input 
+                                id="cvDocument" 
+                                name="cvDocument" 
+                                type="file" 
+                                accept=".pdf,.doc,.docx"
+                                className="cursor-pointer"
+                            />
+                            {interpreter?.documents?.cv && (
+                                <div className="text-sm text-green-600 flex items-center">
+                                    <CheckCircle2 className="w-4 h-4 mr-1" />
+                                    <a href={interpreter.documents.cv} target="_blank" rel="noopener noreferrer" className="underline">
+                                        View uploaded CV
+                                    </a>
+                                </div>
+                            )}
+                        </div>
+
+                         <div className="space-y-2">
+                            <Label htmlFor="signatureDocument" className="text-[var(--deep-navy)]">Signature Scan</Label>
+                             <div className="text-xs text-slate-500 mb-1">
+                                Used for digital signing of invoices and contracts.
+                             </div>
+                            <Input 
+                                id="signatureDocument" 
+                                name="signatureDocument" 
+                                type="file" 
+                                accept=".png,.jpg,.jpeg"
+                                className="cursor-pointer"
+                            />
+                            {interpreter?.documents?.signature && (
+                                <div className="text-sm text-green-600 flex items-center">
+                                    <CheckCircle2 className="w-4 h-4 mr-1" />
+                                    <span>Signature on file</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="school" className="text-[var(--deep-navy)]">School / University</Label>
-                  <Input 
-                    id="school" 
-                    name="school" 
-                    defaultValue={interpreter?.school} 
-                    className="border-gray-200 focus:border-[var(--teal)] focus:ring-[var(--teal)] rounded-lg bg-[var(--azureish-white)]/50"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="graduationDate" className="text-[var(--deep-navy)]">Actual or Expected Graduation Date</Label>
-                  <Input 
-                    id="graduationDate" 
-                    name="graduationDate" 
-                    type="date"
-                    defaultValue={interpreter?.graduation_date} 
-                    className="border-gray-200 focus:border-[var(--teal)] focus:ring-[var(--teal)] rounded-lg bg-[var(--azureish-white)]/50"
-                  />
-                </div>
-
-                <div className="flex items-center space-x-2 py-2">
-                  <Checkbox id="interpretationDegree" name="interpretationDegree" defaultChecked={interpreter?.interpretation_degree} />
-                  <Label htmlFor="interpretationDegree" className="text-[var(--deep-navy)]">Interpretation Degree</Label>
+                <div className="bg-slate-50 p-4 rounded-lg text-sm text-slate-600">
+                    <p>Note: Your CV and specific credentials are not shown publicly to clients until a booking is confirmed.</p>
                 </div>
               </div>
             </div>

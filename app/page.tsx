@@ -138,6 +138,49 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* How It Works Section */}
+        <section id="how-it-works" className="py-24 bg-[var(--azureish-white)]/30">
+          <div className="container mx-auto px-4">
+            <div className="text-center max-w-3xl mx-auto mb-20">
+              <h2 className="text-3xl font-bold tracking-tight text-[var(--deep-navy)] sm:text-4xl mb-6">
+                How It Works
+              </h2>
+              <p className="text-lg text-[var(--medium-blue)] font-light">
+                Our process is designed to be simple, transparent, and efficient.
+              </p>
+            </div>
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+              {[
+                {
+                  step: "01",
+                  title: "Request a Quote",
+                  desc: "Select your service, languages, and upload your documents or details."
+                },
+                {
+                  step: "02",
+                  title: "Get Matched",
+                  desc: "We connect you with the perfect professional for your specific needs."
+                },
+                {
+                  step: "03",
+                  title: "Receive Quality Work",
+                  desc: "Get your translated documents or interpretation service on time."
+                }
+              ].map((item, i) => (
+                <div key={i} className="relative p-8 rounded-2xl bg-white border border-[var(--teal)]/10 text-center">
+                  <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-12 rounded-full bg-[var(--deep-navy)] text-white flex items-center justify-center font-bold text-lg shadow-lg">
+                    {item.step}
+                  </div>
+                  <h3 className="text-xl font-bold text-[var(--deep-navy)] mt-6 mb-3">{item.title}</h3>
+                  <p className="text-[var(--medium-blue)]">
+                    {item.desc}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* Founder Section */}
         <section className="py-24 bg-[var(--deep-navy)] text-white overflow-hidden relative">
           <div className="absolute inset-0 opacity-5 pattern-grid-lg"></div>

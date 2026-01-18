@@ -6,12 +6,24 @@ import Link from "next/link"
 export function InterpreterList({ 
   interpreters, 
   basePath = "/interpreter",
-  isClientVerified = true
+  userRole = "company",
+  clientType
 }: { 
   interpreters: any[] | null, 
   basePath?: string,
-  isClientVerified?: boolean
+  userRole?: "admin" | "company" | "interpreter",
+  clientType?: string | null
 }) {
+  const canViewPII = userRole === "admin" || userRole === "interpreter"
+
+  const scrubPII = (text: string) => {
+    if (!text) return ""
+    let scrubbed = text.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[HIDDEN]')
+    scrubbed = scrubbed.replace(/\b\d{8}\b/g, '[HIDDEN]')
+    scrubbed = scrubbed.replace(/\+?\d{1,4}[-.\s]?\(?\d{1,3}\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}/g, '[HIDDEN]')
+    return scrubbed
+  }
+
   return (
     <div className="grid gap-6">
       {interpreters?.map((interpreter: any) => {
@@ -25,12 +37,13 @@ export function InterpreterList({
         const reviewCount = ratings.length
 
         // Access Control Logic
-        const displayName = isClientVerified 
+        // Mask name if not allowed to view PII
+        const displayName = canViewPII 
           ? interpreter.profiles?.full_name 
-          : "Interpreter (Verification Required)"
+          : `Interpreter #${interpreter.id.slice(0, 8).toUpperCase()}`
         
-        const showAvatar = isClientVerified
-        const canViewProfile = isClientVerified
+        const showAvatar = canViewPII
+        const canViewProfile = true
 
         return (
         <div key={interpreter.id} className="bg-white p-6 rounded-xl shadow-sm border border-[var(--teal)]/10 flex flex-col md:flex-row gap-6 hover:shadow-md transition-shadow">
@@ -40,7 +53,7 @@ export function InterpreterList({
               <img src={interpreter.profiles.avatar_url} alt={displayName} className="w-full h-full object-cover" />
             ) : (
               <div className="text-2xl font-bold text-[var(--deep-navy)]">
-                {showAvatar ? (interpreter.profiles?.full_name?.[0] || "?") : <Lock className="w-8 h-8 text-gray-400" />}
+                <Lock className="w-8 h-8 text-gray-400" />
               </div>
             )}
             {interpreter.verified && (
@@ -82,7 +95,13 @@ export function InterpreterList({
               </div>
               <div className="text-right">
                 <div className="text-lg font-bold text-[var(--deep-navy)]">
-                  {interpreter.hourly_rate ? `${interpreter.hourly_rate} TND/hr` : "Negotiable"}
+                   {clientType === 'international' ? (
+                       interpreter.daily_rate_international 
+                       ? `${interpreter.daily_rate_international} ${interpreter.currency_international || 'USD'}/day`
+                       : "Negotiable"
+                   ) : (
+                       interpreter.daily_rate ? `${interpreter.daily_rate} TND/day` : "Negotiable"
+                   )}
                 </div>
                 <div className="flex items-center justify-end gap-1 text-yellow-500 text-sm mt-1">
                   <Star className="w-4 h-4 fill-current" />
@@ -134,7 +153,7 @@ export function InterpreterList({
             </div>
 
             <p className="mt-4 text-[var(--medium-blue)] line-clamp-2 text-sm">
-              {interpreter.bio || "No bio available."}
+              {canViewPII ? (interpreter.bio || "No bio available.") : scrubPII(interpreter.bio || "No bio available.")}
             </p>
 
             <div className="mt-6 flex gap-3">

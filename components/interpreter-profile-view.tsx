@@ -15,9 +15,10 @@ interface InterpreterProfileViewProps {
     averageRating: number
     totalReviews: number
   }
+  clientType?: string | null
 }
 
-export function InterpreterProfileView({ interpreter, reviews = [], stats = { averageRating: 0, totalReviews: 0 } }: InterpreterProfileViewProps) {
+export function InterpreterProfileView({ interpreter, reviews = [], stats = { averageRating: 0, totalReviews: 0 }, clientType }: InterpreterProfileViewProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       {/* Left Column: Profile Info */}
@@ -71,10 +72,18 @@ export function InterpreterProfileView({ interpreter, reviews = [], stats = { av
                   </div>
                   <div className="text-right">
                     <div className="text-3xl font-bold text-[var(--deep-navy)]">
-                      {interpreter.hourly_rate ? (
-                        <span>{interpreter.hourly_rate} <span className="text-base font-normal text-gray-500">TND/hr</span></span>
+                      {clientType === 'international' ? (
+                        interpreter.daily_rate_international ? (
+                          <span>{interpreter.daily_rate_international} <span className="text-base font-normal text-gray-500">{interpreter.currency_international || 'USD'}/day</span></span>
+                        ) : (
+                          <span className="text-xl">Negotiable</span>
+                        )
                       ) : (
-                        <span className="text-xl">Negotiable</span>
+                        interpreter.daily_rate ? (
+                          <span>{interpreter.daily_rate} <span className="text-base font-normal text-gray-500">TND/day</span></span>
+                        ) : (
+                          <span className="text-xl">Negotiable</span>
+                        )
                       )}
                     </div>
                     <div className="flex items-center justify-end gap-1 text-yellow-500 mt-1">
@@ -254,21 +263,27 @@ export function InterpreterProfileView({ interpreter, reviews = [], stats = { av
               <p>Check the calendar for available slots and proceed to booking.</p>
             </div>
             
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-[var(--medium-blue)]">Hourly Rate</span>
-                <span className="font-medium text-[var(--deep-navy)]">{interpreter.hourly_rate} TND</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-[var(--medium-blue)]">Service Fee</span>
-                <span className="font-medium text-[var(--deep-navy)]">15%</span>
+            <div className="space-y-4 pt-4">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-[var(--medium-blue)] font-medium">Daily Rate</span>
+                <span className="font-bold text-lg text-[var(--teal)]">
+                   {clientType === 'international' ? (
+                       interpreter.daily_rate_international 
+                       ? `${interpreter.daily_rate_international} ${interpreter.currency_international || 'USD'}`
+                       : "Negotiable"
+                   ) :(
+                       interpreter.daily_rate ? `${interpreter.daily_rate} TND` : "Negotiable"
+                   )}
+                </span>
               </div>
             </div>
 
             <BookingDialog 
               interpreterId={interpreter.id} 
               interpreterName={interpreter.profiles?.full_name} 
-              hourlyRate={interpreter.hourly_rate} 
+              hourlyRate={(clientType === 'international') ? (interpreter.daily_rate_international || 0) : (interpreter.daily_rate || 0)}
+              currency={(clientType === 'international') ? (interpreter.currency_international || 'USD') : 'TND'}
+              clientType={clientType || 'local'}
             />
             
             <p className="text-xs text-center text-[var(--medium-blue)]/70 mt-4">

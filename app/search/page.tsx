@@ -14,6 +14,9 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
     redirect("/login")
   }
 
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  const userRole = profile?.role || 'company'
+
   const { data: interpreters, error } = await getInterpreters(supabase, filters)
 
   if (error) {
@@ -37,7 +40,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
               Available Interpreters ({interpreters?.length || 0})
             </h1>
 
-            <InterpreterList interpreters={interpreters} />
+            <InterpreterList interpreters={interpreters} userRole={userRole} />
           </div>
         </div>
       </main>

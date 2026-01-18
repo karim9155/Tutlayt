@@ -7,6 +7,22 @@ export default async function DashboardInterpreterProfilePage({ params }: { para
   const { id } = await params
   const supabase = await createClient()
 
+  // Fetch current user to determine client type
+  const { data: { user } } = await supabase.auth.getUser()
+  let clientType: string | null = null
+
+  if (user) {
+    const { data: company } = await supabase
+      .from('companies')
+      .select('client_type')
+      .eq('id', user.id)
+      .single()
+    
+    if (company) {
+      clientType = company.client_type
+    }
+  }
+
   const { data: interpreter, error } = await supabase
     .from('interpreters')
     .select(`
@@ -29,7 +45,7 @@ export default async function DashboardInterpreterProfilePage({ params }: { para
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold text-[var(--deep-navy)]">Interpreter Profile</h1>
-      <InterpreterProfileView interpreter={interpreter} reviews={reviews} stats={stats} />
+      <InterpreterProfileView interpreter={interpreter} reviews={reviews} stats={stats} clientType={clientType} />
     </div>
   )
 }

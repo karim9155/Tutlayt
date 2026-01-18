@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { updateCompanyProfile } from "@/app/dashboard/client/profile/actions"
@@ -105,6 +106,32 @@ export function ClientProfileForm({ profile, company }: ClientProfileFormProps) 
                     defaultValue={company?.industry}
                     className="border-gray-200 focus:border-[var(--deep-navy)] focus:ring-[var(--deep-navy)] rounded-lg bg-[var(--azureish-white)]/50"
                   />
+                </div>
+
+                <div className="space-y-4 pt-4 border-t border-gray-100">
+                    <Label className="text-[var(--deep-navy)] font-semibold">Organization Location</Label>
+                    <RadioGroup name="clientType" defaultValue={company?.client_type || 'local'} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <RadioGroupItem value="local" id="local" className="peer sr-only" />
+                            <Label
+                              htmlFor="local"
+                              className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-white p-4 hover:bg-gray-50 peer-data-[state=checked]:border-[var(--teal)] peer-data-[state=checked]:text-[var(--teal)] cursor-pointer"
+                            >
+                              <span className="text-lg font-semibold">🇹🇳 Tunisian Company</span>
+                              <span className="text-sm text-center text-gray-500 mt-1">Registered in Tunisia. Pays in TND + 19% TVA.</span>
+                            </Label>
+                        </div>
+                        <div>
+                            <RadioGroupItem value="international" id="international" className="peer sr-only" />
+                            <Label
+                              htmlFor="international"
+                              className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-white p-4 hover:bg-gray-50 peer-data-[state=checked]:border-[var(--teal)] peer-data-[state=checked]:text-[var(--teal)] cursor-pointer"
+                            >
+                              <span className="text-lg font-semibold">🌍 International Company</span>
+                              <span className="text-sm text-center text-gray-500 mt-1">Registered abroad. Pays in USD/EUR. No TVA.</span>
+                            </Label>
+                        </div>
+                    </RadioGroup>
                 </div>
 
                 <div className="space-y-2">

@@ -1,10 +1,58 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { revalidatePath } from "next/cache"
+import { cookies } from "next/headers"
+import { redirect } from "next/navigation"
+
+const ADMIN_CREDENTIALS = {
+  username: "mustpha",
+  password: "mustfa912345@@"
+}
+
+async function ensureAdmin() {
+    const cookieStore = await cookies()
+    if (cookieStore.get("admin_session")?.value !== "true") {
+        throw new Error("Unauthorized")
+    }
+}
+
+export async function adminLogin(formData: FormData) {
+  const username = formData.get("username") as string
+  const password = formData.get("password") as string
+
+  if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
+    const cookieStore = await cookies()
+    cookieStore.set("admin_session", "true", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 60 * 60 * 24, // 1 day
+        path: "/",
+    })
+    redirect("/admin")
+  }
+  
+  // Create a way to return error appropriately, maybe search params or just no-op locally for now as it refreshes page.
+  // Actually, better to redirect back to login? Or simple return. 
+  // Actions in forms that return values don't automatically show up unless using useFormState.
+  // Given the simplicity requested, let's redirect with error query param if failure.
+  redirect("/admin/login?error=Invalid%20credentials")
+}
+
+export async function adminLogout() {
+    const cookieStore = await cookies()
+    cookieStore.delete("admin_session")
+    redirect("/admin/login")
+}
 
 export async function uploadDocument(bucket: string, formData: FormData) {
-  const supabase = await createClient()
+  try {
+    await ensureAdmin()
+  } catch (e) {
+    return { error: "Unauthorized" }
+  }
+  const supabase = createAdminClient()
 
   const file = formData.get("file") as File
   if (!file) return { error: "No file provided" }
@@ -26,7 +74,12 @@ export async function uploadDocument(bucket: string, formData: FormData) {
 }
 
 export async function approveUser(type: "client" | "interpreter", id: string) {
-  const supabase = await createClient()
+  try {
+     await ensureAdmin()
+  } catch (e) {
+      return { error: "Unauthorized" }
+  }
+  const supabase = createAdminClient()
 
   try {
     if (type === "client") {
@@ -60,7 +113,12 @@ export async function approveUser(type: "client" | "interpreter", id: string) {
 }
 
 export async function denyUser(type: "client" | "interpreter", id: string, reason: string) {
-  const supabase = await createClient()
+  try {
+     await ensureAdmin()
+  } catch (e) {
+      return { error: "Unauthorized" }
+  }
+  const supabase = createAdminClient()
 
   try {
     if (type === "client") {
@@ -102,7 +160,12 @@ export async function denyUser(type: "client" | "interpreter", id: string, reaso
 }
 
 export async function deleteDocument(bucket: string, fileName: string) {
-    const supabase = await createClient()
+    try {
+        await ensureAdmin()
+    } catch (e) {
+        return { error: "Unauthorized" }
+    }
+    const supabase = createAdminClient()
 
     const { error } = await supabase.storage
         .from(bucket)
@@ -114,4 +177,36 @@ export async function deleteDocument(bucket: string, fileName: string) {
 
     revalidatePath("/admin")
     return { success: true }
+}
+
+export async function verifySwornStatus(id: string, approved: boolean, reason?: string) {
+  try {
+     await ensureAdmin()
+  } catch (e) {
+      return { error: "Unauthorized" }
+  }
+  const supabase = createAdminClient()
+
+  const updates: any = {
+      sworn_verified: approved,
+      sworn_rejection_reason: approved ? null : reason
+  }
+  
+  // If verifying, ensure is_sworn is true just in case
+  if (approved) {
+      updates.is_sworn = true
+  }
+
+  const { error } = await supabase
+    .from("interpreters")
+    .update(updates)
+    .eq("id", id)
+
+  if (error) {
+    console.error("Error verifying sworn status:", error)
+    return { error: error.message }
+  }
+
+  revalidatePath("/admin")
+  return { success: true }
 }

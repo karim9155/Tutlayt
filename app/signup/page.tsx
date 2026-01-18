@@ -6,7 +6,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { signup } from "@/app/auth/actions"
 import { Logo } from "@/components/logo"
-import { ClientSignupForm } from "@/components/client-signup-form"
 
 export default async function SignupPage({ searchParams }: { searchParams: Promise<{ message: string, role: string }> }) {
   const { message, role } = await searchParams
@@ -51,7 +50,26 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
             </TabsContent>
 
             <TabsContent value="company">
-              <ClientSignupForm />
+              <form action={signup}>
+                <input type="hidden" name="role" value="company" />
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="fullName-company" className="text-[var(--deep-navy)]">Company / Client Name</Label>
+                    <Input id="fullName-company" name="fullName" placeholder="Acme Inc." required className="bg-white border-gray-200 focus:border-[var(--teal)] focus:ring-[var(--teal)]" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email-company" className="text-[var(--deep-navy)]">Email</Label>
+                    <Input id="email-company" name="email" type="email" placeholder="client@example.com" required className="bg-white border-gray-200 focus:border-[var(--teal)] focus:ring-[var(--teal)]" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password-company" className="text-[var(--deep-navy)]">Password</Label>
+                    <Input id="password-company" name="password" type="password" required className="bg-white border-gray-200 focus:border-[var(--teal)] focus:ring-[var(--teal)]" />
+                  </div>
+                  <Button className="w-full mt-4 bg-[var(--deep-navy)] hover:bg-[var(--dark-blue)] text-white font-bold" type="submit">
+                    Sign Up as Client
+                  </Button>
+                </div>
+              </form>
             </TabsContent>
           </Tabs>
           {message && (

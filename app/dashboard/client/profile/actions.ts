@@ -12,6 +12,7 @@ export async function updateCompanyProfile(formData: FormData) {
 
   const companyName = formData.get("companyName") as string
   const industry = formData.get("industry") as string
+  const clientType = formData.get("clientType") as string
   const website = formData.get("website") as string
   const fiscalId = formData.get("fiscalId") as string
 
@@ -20,6 +21,7 @@ export async function updateCompanyProfile(formData: FormData) {
     .update({
       company_name: companyName,
       industry,
+      client_type: clientType,
       website,
       fiscal_id: fiscalId,
     })

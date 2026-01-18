@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
-import { AdminView } from "./view"
+import { createAdminClient } from "@/lib/supabase/admin"
+import { redirect } from "next/navigation"
 
 import { UserVerificationTable } from "@/components/admin/user-verification-table"
 
@@ -26,35 +27,12 @@ async function getDocumentUrls(supabase: any, bucket: string, docs: any) {
   return urls
 }
 
-async function getRawDocuments(supabase: any, bucket: string) {
-  const { data, error } = await supabase.storage.from(bucket).list()
-  
-  if (error) {
-     console.error(`Error fetching ${bucket}:`, error)
-     return []
-  }
-  
-  if (!data) return []
-
-  const files = data.map((file: any) => {
-      const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(file.name)
-      return { 
-          name: file.name,
-          id: file.id,
-          created_at: file.created_at,
-          metadata: file.metadata,
-          bucket,
-          publicUrl
-      }
-  })
-  
-  // Sort by date desc
-  return files.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-}
 
 export default async function AdminPage() {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
+  // Authenticated via layout.tsx check for admin_session cookie
+  
   // 1. Fetch Companies (Clients)
   const { data: companies } = await supabase
     .from('companies')
@@ -95,30 +73,15 @@ export default async function AdminPage() {
       }
   }))
 
-  // 4. Fetch Raw Files
-  const rawInterpreterDocs = await getRawDocuments(supabase, 'interpreter-documents')
-  const rawTranslatorDocs = await getRawDocuments(supabase, 'sworn-translator-documents')
-  const rawClientDocs = await getRawDocuments(supabase, 'client-documents')
-
   return (
-    <div className="container mx-auto py-10 px-4 space-y-8">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-[var(--deep-navy)]">Admin Dashboard</h1>
-        <p className="text-muted-foreground mt-2">Manage users, verifications, and platform settings.</p>
+        <h1 className="text-3xl font-bold tracking-tight text-[var(--deep-navy)]">Verification Dashboard</h1>
+        <p className="text-muted-foreground mt-2">Manage user verification requests.</p>
       </div>
       
       {/* Verification Section */}
       <UserVerificationTable clients={clientsWithUrls} interpreters={interpretersWithUrls} />
-
-      {/* Raw Document View */}
-      <div className="pt-8 border-t">
-         <h2 className="text-xl font-semibold mb-4 text-[var(--deep-navy)]">Raw Document Storage</h2>
-         <AdminView 
-            interpreters={rawInterpreterDocs} 
-            translators={rawTranslatorDocs} 
-            clients={rawClientDocs} 
-          />
-      </div>
     </div>
   )
 }

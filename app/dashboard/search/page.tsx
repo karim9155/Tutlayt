@@ -10,14 +10,18 @@ export default async function DashboardSearchPage({ searchParams }: { searchPara
   // Check client verification status
   const { data: { user } } = await supabase.auth.getUser()
   let isClientVerified = false
+  let profile = null
+  let clientType: string | null = null
 
   if (user) {
     // Check role first
-    const { data: profile } = await supabase
+    const { data: userProfile } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single()
+    
+    profile = userProfile
 
     // Admins and Interpreters are not subject to client verification restrictions
     if (profile?.role === 'admin' || profile?.role === 'interpreter') {
@@ -26,12 +30,13 @@ export default async function DashboardSearchPage({ searchParams }: { searchPara
       // It is a client (or unknown), check verification status
       const { data: company } = await supabase
         .from('companies')
-        .select('verification_status')
+        .select('verification_status, client_type')
         .eq('id', user.id)
         .single()
       
       if (company) {
          isClientVerified = company.verification_status === 'verified'
+         clientType = company.client_type
       }
     }
   }
@@ -78,7 +83,12 @@ export default async function DashboardSearchPage({ searchParams }: { searchPara
             Available Interpreters ({interpreters?.length || 0})
           </h2>
 
-          <InterpreterList interpreters={interpreters} basePath="/dashboard/interpreters" isClientVerified={isClientVerified} />
+          <InterpreterList 
+            interpreters={interpreters} 
+            basePath="/dashboard/interpreters" 
+            userRole={profile?.role} 
+            clientType={clientType}
+          />
         </div>
       </div>
     </div>
