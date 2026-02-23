@@ -22,8 +22,10 @@ export default async function DashboardPage() {
     return redirect("/dashboard/interpreter")
   } else if (profile?.role === "company") {
     return redirect("/dashboard/client")
+  } else if (profile?.role === "admin") {
+    return redirect("/admin")
   } else {
-    // Fallback or admin
+    // Fallback
     return (
       <div className="p-8">
         <h1 className="text-2xl font-bold">Dashboard</h1>

@@ -34,7 +34,7 @@ export default async function ClientDashboard() {
   // Fetch company details and bookings
   const { data: company } = await supabase
     .from("companies")
-    .select("credits, fiscal_id, verification_status, documents, id")
+    .select("credits, fiscal_id, verification_status, documents, id, info_request_details")
     .eq("id", user.id)
     .single()
 
@@ -46,6 +46,17 @@ export default async function ClientDashboard() {
           <div className="container mx-auto py-10 px-4 max-w-4xl space-y-8">
               <div className="flex flex-col gap-4">
                   <h1 className="text-3xl font-bold text-[var(--deep-navy)]">Account Verification</h1>
+                  
+                  {company?.info_request_details && (
+                      <div className="bg-blue-50 border border-blue-200 text-blue-900 px-4 py-4 rounded-md flex gap-3 items-start shadow-sm">
+                          <AlertCircle className="h-5 w-5 mt-0.5 shrink-0 text-blue-600" />
+                          <div className="flex-1">
+                              <p className="font-bold text-blue-800">Action Required: Information Requested</p>
+                              <p className="text-sm mt-1 whitespace-pre-wrap">{company.info_request_details}</p>
+                          </div>
+                      </div>
+                  )}
+
                   <div className="bg-amber-50 border border-amber-200 text-amber-900 px-4 py-3 rounded-md flex gap-2 items-start">
                       <ShieldAlert className="h-5 w-5 mt-0.5 shrink-0" />
                       <div>

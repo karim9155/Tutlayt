@@ -5,10 +5,13 @@ import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { Check, X, Building2, User as UserIcon, AlertCircle, FileText, Maximize2, Loader2 } from "lucide-react"
+import { 
+  Check, X, Building2, User as UserIcon, AlertCircle, FileText, Maximize2, Loader2,
+  Globe, GraduationCap, Briefcase, Phone, Linkedin, ExternalLink 
+} from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
-import { approveUser, denyUser, verifySwornStatus } from "@/app/admin/actions"
+import { approveUser, denyUser, verifySwornStatus, requestMoreInfo } from "@/app/admin/actions"
 import {
   Dialog,
   DialogContent,
@@ -17,6 +20,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+  } from "@/components/ui/accordion"
 import Image from "next/image"
 
 interface VerificationReviewModalProps {
@@ -29,8 +38,10 @@ interface VerificationReviewModalProps {
 export function VerificationReviewModal({ user, isOpen, onClose, onComplete }: VerificationReviewModalProps) {
   const [rejecting, setRejecting] = useState(false)
   const [swornRejecting, setSwornRejecting] = useState(false)
+  const [requestingInfo, setRequestingInfo] = useState(false)
   const [loading, setLoading] = useState(false)
   const [rejectionReason, setRejectionReason] = useState("")
+  const [infoRequestMessage, setInfoRequestMessage] = useState("")
   const [expandedDoc, setExpandedDoc] = useState<string | null>(null)
 
   const isClient = user?.role === 'client'
@@ -80,6 +91,25 @@ export function VerificationReviewModal({ user, isOpen, onClose, onComplete }: V
       onClose()
       setRejecting(false)
       setRejectionReason("")
+    } catch (error: any) {
+      toast.error(error.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleRequestInfo = async () => {
+    if (!infoRequestMessage) return toast.error("Please provide a message")
+    
+    setLoading(true)
+    try {
+      const result = await requestMoreInfo(user.role, user.id, infoRequestMessage)
+      if (result.error) throw new Error(result.error)
+      toast.success("Info request sent successfully")
+      onComplete()
+      onClose()
+      setRequestingInfo(false)
+      setInfoRequestMessage("")
     } catch (error: any) {
       toast.error(error.message)
     } finally {
@@ -164,132 +194,301 @@ export function VerificationReviewModal({ user, isOpen, onClose, onComplete }: V
             </div>
 
             <div className="space-y-4 px-1">
-                <h4 className="font-semibold text-sm uppercase tracking-wider text-slate-400 border-b pb-2">Profile Details</h4>
-                <div className="grid grid-cols-1 gap-4 text-sm">
-                    <div>
-                        <div className="font-medium text-slate-500">Full Name</div>
-                        <div className="text-[var(--deep-navy)] font-medium">{user.profiles?.full_name}</div>
-                    </div>
-                
-                    <div>
-                        <div className="font-medium text-slate-500">Joined Date</div>
-                        <div className="text-[var(--deep-navy)]">{new Date(user.created_at).toLocaleDateString()}</div>
-                    </div>
-
-                    {!isClient && (
-                      <>
-                        <div>
-                            <div className="font-medium text-slate-500">Working Languages</div>
-                            <div className="text-[var(--deep-navy)] flex flex-wrap gap-1 mt-1">
-                                {user.languages?.map((lang: any) => (
-                                    <Badge key={lang.language} variant="secondary" className="text-xs">{lang.language}</Badge>
-                                ))}
+                <Accordion type="single" collapsible className="w-full" defaultValue="overview">
+                    
+                    {/* Item 1: Overview */}
+                    <AccordionItem value="overview" className="border-b border-slate-100">
+                        <AccordionTrigger className="text-sm font-semibold text-slate-700 hover:text-[var(--teal)] hover:no-underline py-3">
+                            <div className="flex items-center gap-2">
+                                <UserIcon className="w-4 h-4 text-slate-400" />
+                                <span>Overview</span>
                             </div>
-                        </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="space-y-4 pt-2 pb-4 px-1">
+                            {/* Bio */}
+                            <div>
+                                <h5 className="text-xs font-medium text-slate-500 mb-1 uppercase tracking-wide">Bio</h5>
+                                <p className="text-sm text-slate-600 leading-relaxed italic">
+                                    {user.bio || "No biography provided."}
+                                </p>
+                            </div>
 
-                        <div>
-                            <div className="font-medium text-slate-500">City Base</div>
-                            <div className="text-[var(--deep-navy)]">{user.city}</div>
-                        </div>
-
-                        <div>
-                            <div className="font-medium text-slate-500 mb-2">Sworn Status</div>
-                            {user.is_sworn ? (
-                                <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg">
-                                    <div className="flex items-center justify-between mb-3">
-                                        {user.sworn_verified ? (
-                                            <Badge className="bg-green-600 hover:bg-green-700">Verified Sworn</Badge>
-                                        ) : user.sworn_rejection_reason ? (
-                                             <div className="flex flex-col">
-                                                <Badge variant="destructive" className="w-fit mb-1">Rejected</Badge>
-                                                <span className="text-xs text-red-600 leading-tight">{user.sworn_rejection_reason}</span>
-                                             </div>
+                            {/* Specializations */}
+                            {!isClient && (
+                                <div>
+                                    <h5 className="text-xs font-medium text-slate-500 mb-2 uppercase tracking-wide">Specializations</h5>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {user.specializations && user.specializations.length > 0 ? (
+                                            user.specializations.map((spec: string, idx: number) => (
+                                                <Badge key={idx} variant="outline" className="text-xs font-normal bg-white text-slate-600 border-slate-200">
+                                                    {spec}
+                                                </Badge>
+                                            ))
                                         ) : (
-                                            <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200">Pending Review</Badge>
+                                            <span className="text-sm text-slate-400">None listed</span>
                                         )}
                                     </div>
-                                    
-                                    {user.documents?.sworn_proof ? (
-                                        <Button 
-                                            variant="outline" 
-                                            size="sm" 
-                                            className="w-full mb-3 h-8 text-xs bg-white text-blue-700 border-blue-200 hover:bg-blue-50"
-                                            onClick={() => setExpandedDoc(user.documents.sworn_proof)}
-                                        >
-                                            <FileText className="w-3 h-3 mr-1.5" /> View Certificate
-                                        </Button>
-                                    ) : (
-                                        <div className="text-xs text-red-500 mb-3 italic">No certificate uploaded</div>
-                                    )}
-
-                                    {!user.sworn_verified && !swornRejecting && (
-                                        <div className="flex gap-2">
-                                            <Button 
-                                                size="sm" 
-                                                className="flex-1 h-7 text-xs bg-green-600 hover:bg-green-700"
-                                                onClick={() => handleSwornAction(true)}
-                                                disabled={loading}
-                                            >
-                                                <Check className="w-3 h-3 mr-1" /> Accept
-                                            </Button>
-                                            <Button 
-                                                size="sm" 
-                                                variant="outline"
-                                                className="flex-1 h-7 text-xs text-red-600 border-red-200 hover:bg-red-50"
-                                                onClick={() => setSwornRejecting(true)}
-                                                disabled={loading}
-                                            >
-                                                <X className="w-3 h-3 mr-1" /> Reject
-                                            </Button>
-                                        </div>
-                                    )}
-
-                                    {swornRejecting && (
-                                        <div className="space-y-2 animate-in fade-in zoom-in-95 duration-200">
-                                            <Textarea 
-                                                placeholder="Reason for rejecting sworn status..."
-                                                className="min-h-[60px] text-xs bg-white"
-                                                value={rejectionReason}
-                                                onChange={(e) => setRejectionReason(e.target.value)}
-                                            />
-                                            <div className="flex gap-2">
-                                                <Button 
-                                                    size="sm"
-                                                    variant="destructive"
-                                                    className="flex-1 h-7 text-xs"
-                                                    onClick={() => handleSwornAction(false)}
-                                                    disabled={loading}
-                                                >
-                                                    Confirm Reject
-                                                </Button>
-                                                <Button 
-                                                    size="sm"
-                                                    variant="ghost"
-                                                    className="h-7 text-xs"
-                                                    onClick={() => {
-                                                        setSwornRejecting(false)
-                                                        setRejectionReason("")
-                                                    }}
-                                                    disabled={loading}
-                                                >
-                                                    Cancel
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    )}
                                 </div>
+                            )}
+
+                            {/* Languages */}
+                            {!isClient && (
+                                <div>
+                                    <h5 className="text-xs font-medium text-slate-500 mb-2 uppercase tracking-wide flex items-center gap-1.5">
+                                        <Globe className="w-3 h-3" /> Languages
+                                    </h5>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {user.languages?.map((lang: any, idx: number) => {
+                                            // Handle both string[] and object[] cases safely
+                                            const langName = typeof lang === 'string' ? lang : lang?.language;
+                                            return (
+                                                <Badge key={idx} variant="secondary" className="text-xs bg-slate-100 text-slate-700 hover:bg-slate-200">
+                                                    {langName}
+                                                </Badge>
+                                            );
+                                        })}
+                                        {(!user.languages || user.languages.length === 0) && (
+                                            <span className="text-sm text-slate-400">No languages listed</span>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </AccordionContent>
+                    </AccordionItem>
+
+                    {/* Item 2: Experience & Education */}
+                    {!isClient && (
+                        <AccordionItem value="experience" className="border-b border-slate-100">
+                            <AccordionTrigger className="text-sm font-semibold text-slate-700 hover:text-[var(--teal)] hover:no-underline py-3">
+                                <div className="flex items-center gap-2">
+                                    <GraduationCap className="w-4 h-4 text-slate-400" />
+                                    <span>Experience & Education</span>
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="space-y-4 pt-2 pb-4 px-1">
+                                {/* Experience */}
+                                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100">
+                                    <Briefcase className="w-5 h-5 text-slate-400" />
+                                    <div>
+                                        <div className="text-xs text-slate-500 font-medium uppercase">Experience</div>
+                                        <div className="text-sm font-semibold text-[var(--deep-navy)]">
+                                            {user.years_experience ? `${user.years_experience} Years` : (
+                                                user.interpreter_since ? `Since ${user.interpreter_since}` : "Not provided"
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Education Listing */}
+                                <div>
+                                    <h5 className="text-xs font-medium text-slate-500 mb-2 uppercase tracking-wide">Education History</h5>
+                                    <div className="space-y-3">
+                                        {Array.isArray(user.education_history) && user.education_history.length > 0 ? (
+                                            user.education_history.map((edu: any, idx: number) => (
+                                                <div key={idx} className="text-sm border-l-2 border-slate-200 pl-3 py-1">
+                                                    <div className="font-medium text-[var(--deep-navy)]">{edu.degree || "Degree"}</div>
+                                                    <div className="text-slate-500 text-xs">{edu.school || "School"} • {edu.year || "Year"}</div>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="text-sm text-slate-400 italic">No education history provided</div>
+                                        )}
+                                    </div>
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                    )}
+
+                    {/* Item 3: Contact & Rates */}
+                    <AccordionItem value="contact" className="border-b-0">
+                        <AccordionTrigger className="text-sm font-semibold text-slate-700 hover:text-[var(--teal)] hover:no-underline py-3">
+                            <div className="flex items-center gap-2">
+                                <Phone className="w-4 h-4 text-slate-400" />
+                                <span>Contact & Rates</span>
+                            </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="space-y-4 pt-2 pb-4 px-1">
+                            <div className="grid grid-cols-1 gap-3">
+                                <div className="flex items-center justify-between text-sm group">
+                                    <span className="text-slate-500">Email</span>
+                                    <span className="font-medium truncate max-w-[180px] select-all">{user.profiles?.email}</span>
+                                </div>
+                                <div className="flex items-center justify-between text-sm group">
+                                    <span className="text-slate-500">Phone</span>
+                                    <span className="font-medium select-all">{user.phone || "N/A"}</span>
+                                </div>
+                                {user.linkedin_profile && (
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-slate-500 flex items-center gap-1.5"><Linkedin className="w-3 h-3" /> LinkedIn</span>
+                                        <a href={user.linkedin_profile} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline flex items-center gap-1">
+                                            View Profile <ExternalLink className="w-3 h-3" />
+                                        </a>
+                                    </div>
+                                )}
+                                {user.website && (
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-slate-500 flex items-center gap-1.5"><Globe className="w-3 h-3" /> Website</span>
+                                        <a href={user.website} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline flex items-center gap-1">
+                                            Visit Site <ExternalLink className="w-3 h-3" />
+                                        </a>
+                                    </div>
+                                )}
+                            </div>
+                            
+                            {!isClient && (
+                                <div className="pt-3 border-t border-slate-100 mt-2">
+                                    <h5 className="text-xs font-medium text-slate-500 mb-2 uppercase tracking-wide">Base Rates</h5>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div className="bg-slate-50 p-2 rounded text-center border border-slate-100">
+                                            <div className="text-slate-400 text-[10px] uppercase">Hourly</div>
+                                            <div className="font-bold text-slate-700">{user.hourly_rate ? `€${user.hourly_rate}` : '-'}</div>
+                                        </div>
+                                        <div className="bg-slate-50 p-2 rounded text-center border border-slate-100">
+                                            <div className="text-slate-400 text-[10px] uppercase">Daily</div>
+                                            <div className="font-bold text-slate-700">{user.daily_rate ? `€${user.daily_rate}` : '-'}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </AccordionContent>
+                    </AccordionItem>
+                </Accordion>
+
+                {/* Sworn Status Block - Moved outside Accordion */}
+                {!isClient && user.is_sworn && (
+                    <div className="mt-4 p-3 bg-blue-50/50 border border-blue-100 rounded-lg">
+                        <div className="font-medium text-slate-700 mb-3 flex items-center gap-2 text-sm border-b border-blue-100 pb-2">
+                            <FileText className="w-4 h-4 text-blue-500" />
+                            Sworn Status Verification
+                        </div>
+                        
+                        <div className="flex items-center justify-between mb-3">
+                            {user.sworn_verified ? (
+                                <Badge className="bg-green-600 hover:bg-green-700">Verified Sworn</Badge>
+                            ) : user.sworn_rejection_reason ? (
+                                    <div className="flex flex-col">
+                                    <Badge variant="destructive" className="w-fit mb-1">Rejected</Badge>
+                                    <span className="text-xs text-red-600 leading-tight">{user.sworn_rejection_reason}</span>
+                                    </div>
                             ) : (
-                                <span className="text-slate-400 text-sm">Not sworn</span>
+                                <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200">Pending Review</Badge>
                             )}
                         </div>
-                      </>
-                    )}
-                </div>
+                        
+                        {user.documents?.sworn_proof ? (
+                            <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="w-full mb-3 h-8 text-xs bg-white text-blue-700 border-blue-200 hover:bg-blue-50"
+                                onClick={() => setExpandedDoc(user.documents.sworn_proof)}
+                            >
+                                <Maximize2 className="w-3 h-3 mr-1.5" /> View Certificate
+                            </Button>
+                        ) : (
+                            <div className="text-xs text-red-500 mb-3 italic flex items-center gap-1">
+                                <AlertCircle className="w-3 h-3" /> No certificate uploaded
+                            </div>
+                        )}
+
+                        {!user.sworn_verified && !swornRejecting && (
+                            <div className="flex gap-2">
+                                <Button 
+                                    size="sm" 
+                                    className="flex-1 h-7 text-xs bg-green-600 hover:bg-green-700"
+                                    onClick={() => handleSwornAction(true)}
+                                    disabled={loading}
+                                >
+                                    <Check className="w-3 h-3 mr-1" /> Accept
+                                </Button>
+                                <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    className="flex-1 h-7 text-xs text-red-600 border-red-200 hover:bg-red-50"
+                                    onClick={() => setSwornRejecting(true)}
+                                    disabled={loading}
+                                >
+                                    <X className="w-3 h-3 mr-1" /> Reject
+                                </Button>
+                            </div>
+                        )}
+
+                        {swornRejecting && (
+                            <div className="space-y-2 animate-in fade-in zoom-in-95 duration-200">
+                                <Textarea 
+                                    placeholder="Reason for rejecting sworn status..."
+                                    className="min-h-[60px] text-xs bg-white"
+                                    value={rejectionReason}
+                                    onChange={(e) => setRejectionReason(e.target.value)}
+                                />
+                                <div className="flex gap-2">
+                                    <Button 
+                                        size="sm"
+                                        variant="destructive"
+                                        className="flex-1 h-7 text-xs"
+                                        onClick={() => handleSwornAction(false)}
+                                        disabled={loading}
+                                    >
+                                        Confirm Reject
+                                    </Button>
+                                    <Button 
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-7 text-xs"
+                                        onClick={() => {
+                                            setSwornRejecting(false)
+                                            setRejectionReason("")
+                                        }}
+                                        disabled={loading}
+                                    >
+                                        Cancel
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
             
             <div className="pt-4 mt-4 border-t border-slate-100 space-y-3">
-                 {!rejecting ? (
+                 {requestingInfo ? (
+                    <div className="space-y-3 bg-blue-50 p-3 rounded-lg border border-blue-100 animate-in fade-in slide-in-from-top-2">
+                        <Label className="text-blue-800">Additional Information Required</Label>
+                        <Textarea 
+                            placeholder="Specify what information or documents are needed..." 
+                            className="bg-white border-blue-200 resize-none min-h-[80px]"
+                            value={infoRequestMessage}
+                            onChange={(e) => setInfoRequestMessage(e.target.value)}
+                        />
+                        <div className="flex gap-2">
+                            <Button 
+                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white" 
+                                size="sm" 
+                                onClick={handleRequestInfo} 
+                                disabled={loading}
+                            >
+                                Send Request
+                            </Button>
+                            <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => {
+                                    setRequestingInfo(false)
+                                    setInfoRequestMessage("") 
+                                }}
+                            >
+                                Cancel
+                            </Button>
+                        </div>
+                    </div>
+                 ) : !rejecting ? (
                     <>
+                        <Button 
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white mb-2" 
+                            onClick={() => setRequestingInfo(true)}
+                            disabled={loading}
+                        >
+                            <FileText className="w-4 h-4 mr-2" /> Request More Info
+                        </Button>
                         <Button 
                             className="w-full bg-[var(--teal)] hover:bg-[var(--teal)]/90" 
                             onClick={handleApprove} 
@@ -303,12 +502,13 @@ export function VerificationReviewModal({ user, isOpen, onClose, onComplete }: V
                             onClick={() => setRejecting(true)}
                             disabled={loading}
                         >
-                            <X className="w-4 h-4 mr-2" /> Deny Request
+                            <X className="w-4 h-4 mr-2" /> Reject & Delete User
                         </Button>
                     </>
                  ) : (
                     <div className="space-y-3 bg-red-50 p-3 rounded-lg border border-red-100 animate-in fade-in slide-in-from-top-2">
                         <Label className="text-red-800">Reason for rejection *</Label>
+                        <p className="text-xs text-red-600 font-medium">Warning: This will permanently delete the user account.</p>
                         <Textarea 
                             placeholder="Explain why this profile is being rejected..." 
                             className="bg-white border-red-200 resize-none min-h-[80px]"
@@ -323,7 +523,7 @@ export function VerificationReviewModal({ user, isOpen, onClose, onComplete }: V
                                 onClick={handleDeny} 
                                 disabled={loading}
                             >
-                                Confirm Deny
+                                Confirm Delete
                             </Button>
                             <Button 
                                 variant="ghost" 

@@ -1,7 +1,4 @@
-import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
-import { redirect } from "next/navigation"
-
 import { UserVerificationTable } from "@/components/admin/user-verification-table"
 
 async function getDocumentUrls(supabase: any, bucket: string, docs: any) {
@@ -10,13 +7,13 @@ async function getDocumentUrls(supabase: any, bucket: string, docs: any) {
 
   for (const [key, val] of Object.entries(docs)) {
     let path = val as string
-    // Handle client object structure { path: '...', signed_at: '...' }
-    if (typeof val === 'object' && val !== null && (val as any).path) {
+    // Handle client object structure { path: "...", signed_at: "..." }
+    if (typeof val === "object" && val !== null && (val as any).path) {
         path = (val as any).path
     }
     
-    if (typeof path === 'string') {
-        if (path.startsWith('http')) {
+    if (typeof path === "string") {
+        if (path.startsWith("http")) {
             urls[key] = path
         } else {
             const { data } = supabase.storage.from(bucket).getPublicUrl(path)
@@ -27,52 +24,61 @@ async function getDocumentUrls(supabase: any, bucket: string, docs: any) {
   return urls
 }
 
+type SearchParams = {
+  tab?: string
+  q?: string
+  page?: string
+}
 
-export default async function AdminPage() {
+export default async function AdminPage({ 
+  searchParams 
+}: { 
+  searchParams: Promise<SearchParams> 
+}) {
+  const params = await searchParams
   const supabase = createAdminClient()
-
-  // Authenticated via layout.tsx check for admin_session cookie
   
   // 1. Fetch Companies (Clients)
-  const { data: companies } = await supabase
-    .from('companies')
+  const { data: clientsData, count: clientsCount } = await supabase
+    .from("companies")
     .select(`
         *,
-        profiles ( full_name, email, avatar_url )
-    `)
-    .order('created_at', { ascending: false })
-
-  // 2. Fetch Interpreters
-  const { data: interpretersRaw } = await supabase
-    .from('interpreters')
-    .select(`
-        *,
-        profiles ( full_name, email, avatar_url )
-    `)
-    .order('created_at', { ascending: false })
+        profiles!inner ( full_name, email, avatar_url )
+    `, { count: "exact" })
+    .order("created_at", { ascending: false })
   
-  // Use all interpreters, regardless of document status
-  const interpreters = interpretersRaw || []
+  // 2. Fetch Interpreters
+  const { data: interpretersData, count: interpretersCount } = await supabase
+    .from("interpreters")
+    .select(`
+        *,
+        profiles!inner ( full_name, email, avatar_url )
+    `, { count: "exact" })
+    .order("created_at", { ascending: false })
+  
+  const interpreters = interpretersData || []
+  const companies = clientsData || []
 
-  // 3. Process URLs for display
-  const clientsWithUrls = await Promise.all((companies || []).map(async (c) => ({
+  // 3. Process URLs for display (Only for fetched data)
+  const clientsWithUrls = await Promise.all(companies.map(async (c) => ({
       ...c,
-      documentUrls: await getDocumentUrls(supabase, 'client-documents', c.documents)
+      role: "client",
+      documentUrls: await getDocumentUrls(supabase, "client-documents", c.documents)
   })))
 
   const interpretersWithUrls = await Promise.all(interpreters.map(async (i) => {
       const docs = i.documents || {}
       // Add legacy if missing from docs
-      if (i.signed_policy_url && !docs['Legacy Signed Policy']) {
-          // If it's a full URL, good. If path, resolved.
-          docs['Legacy Signed Policy'] = i.signed_policy_url
+      if (i.signed_policy_url && !docs["Legacy Signed Policy"]) {
+          docs["Legacy Signed Policy"] = i.signed_policy_url
       }
       return {
           ...i,
-          documentUrls: await getDocumentUrls(supabase, 'interpreter-documents', docs)
+          role: "interpreter",
+          documentUrls: await getDocumentUrls(supabase, "interpreter-documents", docs)
       }
   }))
-
+  
   return (
     <div className="space-y-8">
       <div>
@@ -81,7 +87,14 @@ export default async function AdminPage() {
       </div>
       
       {/* Verification Section */}
-      <UserVerificationTable clients={clientsWithUrls} interpreters={interpretersWithUrls} />
+      <UserVerificationTable 
+        clients={clientsWithUrls} 
+        interpreters={interpretersWithUrls} 
+        totalClients={clientsCount || 0}
+        totalInterpreters={interpretersCount || 0}
+        page={1} // Pass dummy page as client handles pagination
+        totalPages={1} // Pass dummy totalPages as client handles pagination
+      />
     </div>
   )
 }

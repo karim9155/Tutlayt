@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin"
 import { revalidatePath } from "next/cache"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
+import { sendEmail } from "@/lib/email"
 
 const ADMIN_CREDENTIALS = {
   username: "mustpha",
@@ -121,35 +122,33 @@ export async function denyUser(type: "client" | "interpreter", id: string, reaso
   const supabase = createAdminClient()
 
   try {
-    if (type === "client") {
-      // Fetch current documents to clear the specific one?
-      // Or just clear all signatures? Let's assume we want to force re-sign of everything or just setting status is enough?
-      // User asked to "effectively reset". Clearing documents JSONB is the surest way.
-      // But we might want to keep some? Let's assume emptying documents is safe for "Verification" documents.
-      
-      const { error } = await supabase
-        .from("companies")
-        .update({ 
-          verification_status: "rejected", 
-          rejection_reason: reason,
-          documents: {} // Reset documents
-        })
-        .eq("id", id)
-
-      if (error) throw error
-    } else {
-      const { error } = await supabase
-        .from("interpreters")
-        .update({ 
-          verified: false, 
-          rejection_reason: reason,
-          signed_policy_url: null, // Legacy
-          documents: {} // Reset documents
-        })
-        .eq("id", id)
-
-      if (error) throw error
+     // Fetch user for email (before deletion)
+    const { data: userData } = await supabase.auth.admin.getUserById(id)
+    
+    // Send email if possible
+    if (userData?.user?.email) {
+       await sendEmail(
+          userData.user.email,
+          "Account Application Rejected - Tutlayt",
+          `Your application has been reviewed and rejected.\n\nReason: ${reason}\n\nYour account has been removed. You may re-apply if you address the issues stated.`,
+          `
+          <div style="font-family: sans-serif; padding: 20px; color: #333;">
+            <h2 style="color: #d32f2f;">Application Rejected</h2>
+            <p>Hello,</p>
+            <p>We regret to inform you that your application to join Tutlayt has been declined.</p>
+             <blockquote style="background: #fff5f5; border-left: 4px solid #d32f2f; padding: 15px; margin: 20px 0;">
+              <strong>Reason:</strong> ${reason}
+            </blockquote>
+            <p>Your account has been deleted from our system.</p>
+          </div>
+          `
+       )
     }
+
+    // Delete user (Cascades to profiles, interpreters/companies)
+    const { error } = await supabase.auth.admin.deleteUser(id)
+
+    if (error) throw error
 
     revalidatePath("/admin")
     return { success: true }
@@ -205,6 +204,58 @@ export async function verifySwornStatus(id: string, approved: boolean, reason?: 
   if (error) {
     console.error("Error verifying sworn status:", error)
     return { error: error.message }
+  }
+
+  revalidatePath("/admin")
+  return { success: true }
+}
+
+export async function requestMoreInfo(type: "client" | "interpreter", id: string, message: string) {
+  try {
+     await ensureAdmin()
+  } catch (e) {
+      return { error: "Unauthorized" }
+  }
+  const supabase = createAdminClient()
+
+  if (!message) return { error: "Message is required" }
+
+  const tableName = type === "client" ? "companies" : "interpreters"
+
+  const { error } = await supabase
+    .from(tableName as any)
+    .update({ 
+      info_request_details: message,
+      rejection_reason: null
+    })
+    .eq("id", id)
+
+  if (error) {
+    console.error(`Error requesting info for ${type} ${id}:`, error)
+    return { error: error.message }
+  }
+
+  // Fetch the user's email to send the request
+  const { data: userData, error: userError } = await supabase.auth.admin.getUserById(id)
+  
+  if (userData?.user?.email) {
+      await sendEmail(
+          userData.user.email,
+          "Action Required: Additional Information for Tutlayt Verification",
+          message,
+          `
+          <div style="font-family: sans-serif; padding: 20px; color: #333;">
+            <h2 style="color: #008080;">Action Required</h2>
+            <p>Hello,</p>
+            <p>Admin has reviewed your profile and requires additional information to proceed with your verification.</p>
+            <blockquote style="background: #f0f9ff; border-left: 4px solid #008080; padding: 15px; margin: 20px 0;">
+              ${message}
+            </blockquote>
+            <p>Please log in to your dashboard to update your profile or upload the requested documents.</p>
+            <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/login" style="background-color: #008080; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Go to Dashboard</a>
+          </div>
+          `
+      )
   }
 
   revalidatePath("/admin")

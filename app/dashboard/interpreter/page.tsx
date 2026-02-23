@@ -95,6 +95,29 @@ export default async function InterpreterDashboard() {
           </div>
         </div>
       )}
+
+      {interpreter?.info_request_details && !interpreter?.verified && !interpreter?.rejection_reason && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
+          <div>
+            <h4 className="font-semibold text-blue-800">Action Required: Additional Information Needed</h4>
+             <p className="text-sm text-blue-700 mt-2 whitespace-pre-wrap font-medium">
+              The admin has requested the following information to proceed with your verification:
+            </p>
+            <div className="bg-white/50 p-3 rounded-md border border-blue-100 mt-2 text-sm text-blue-900 shadow-sm">
+                {interpreter.info_request_details}
+            </div>
+            <div className="mt-4">
+                <Link href="/dashboard/interpreter/profile">
+                    <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm">
+                        Update Profile & Documents
+                    </Button>
+                </Link>
+            </div>
+          </div>
+        </div>
+      )}
+      
       
       <div className="grid gap-8 md:grid-cols-3">
         <div className="md:col-span-2 space-y-8">
