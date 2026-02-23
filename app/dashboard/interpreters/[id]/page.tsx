@@ -11,15 +11,18 @@ export default async function DashboardInterpreterProfilePage({ params }: { para
   const { data: { user } } = await supabase.auth.getUser()
   let clientType: string | null = null
 
+  let documentsVerified = false
+
   if (user) {
     const { data: company } = await supabase
       .from('companies')
-      .select('client_type')
+      .select('client_type, verification_status')
       .eq('id', user.id)
       .single()
     
     if (company) {
       clientType = company.client_type
+      documentsVerified = ['pending_approval', 'verified'].includes(company.verification_status)
     }
   }
 
@@ -45,7 +48,7 @@ export default async function DashboardInterpreterProfilePage({ params }: { para
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold text-[var(--deep-navy)]">Interpreter Profile</h1>
-      <InterpreterProfileView interpreter={interpreter} reviews={reviews} stats={stats} clientType={clientType} />
+      <InterpreterProfileView interpreter={interpreter} reviews={reviews} stats={stats} clientType={clientType} documentsVerified={documentsVerified} />
     </div>
   )
 }
