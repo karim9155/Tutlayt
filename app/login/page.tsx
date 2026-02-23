@@ -6,8 +6,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { login } from "@/app/auth/actions"
 import { Logo } from "@/components/logo"
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ message: string }> }) {
-  const { message } = await searchParams
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ message: string, signup: string }> }) {
+  const { message, signup } = await searchParams
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12 bg-[var(--azureish-white)]">
       <div className="mb-8">
@@ -33,6 +33,12 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
               </div>
               <Input id="password" name="password" type="password" required className="bg-white border-gray-200 focus:border-[var(--teal)] focus:ring-[var(--teal)]" />
             </div>
+            {signup === 'success' && (
+              <div className="text-sm text-green-700 font-medium bg-green-50 border border-green-200 p-3 rounded flex items-start gap-2">
+                <svg className="w-4 h-4 mt-0.5 shrink-0 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                <span>Account created successfully! You can now log in.</span>
+              </div>
+            )}
             {message && (
               <div className="text-sm text-red-500 font-medium bg-red-50 p-2 rounded">{message}</div>
             )}

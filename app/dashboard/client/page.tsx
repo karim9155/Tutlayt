@@ -34,7 +34,7 @@ export default async function ClientDashboard() {
   // Fetch company details and bookings
   const { data: company } = await supabase
     .from("companies")
-    .select("credits, fiscal_id, verification_status, documents, id, info_request_details")
+    .select("credits, balance, client_type, fiscal_id, verification_status, documents, id, info_request_details")
     .eq("id", user.id)
     .single()
 
@@ -85,18 +85,23 @@ export default async function ClientDashboard() {
           <p className="text-gray-500 mt-1">Manage your bookings and credits.</p>
         </div>
         <div className="flex items-center gap-4">
-          <div className="bg-white border border-[var(--teal)]/20 px-4 py-2 rounded-xl shadow-sm flex items-center gap-3">
+          <Link href="/dashboard/client/payments" className="bg-white border border-[var(--teal)]/20 px-4 py-2 rounded-xl shadow-sm flex items-center gap-3 hover:border-[var(--teal)]/40 transition-colors">
             <div className="bg-[var(--teal)]/10 p-2 rounded-lg">
               <CreditCard className="h-5 w-5 text-[var(--teal)]" />
             </div>
             <div>
-              <span className="text-xs text-gray-500 block uppercase tracking-wider font-semibold">Credits</span>
-              <span className="font-bold text-[var(--deep-navy)] text-xl">{company?.credits || 0}</span>
+              <span className="text-xs text-gray-500 block uppercase tracking-wider font-semibold">Balance</span>
+              <span className="font-bold text-[var(--deep-navy)] text-xl">
+                {parseFloat(company?.balance ?? company?.credits ?? 0).toFixed(2)}{" "}
+                <span className="text-sm font-normal text-gray-500">{company?.client_type === "international" ? "USD" : "TND"}</span>
+              </span>
             </div>
-          </div>
-          <Button className="bg-[var(--teal)] hover:bg-[var(--teal-blue)] text-white shadow-lg shadow-teal-500/20">
-            <Plus className="mr-2 h-4 w-4" /> Buy Packs
-          </Button>
+          </Link>
+          <Link href="/dashboard/client/payments">
+            <Button className="bg-[var(--teal)] hover:bg-[var(--teal-blue)] text-white shadow-lg shadow-teal-500/20">
+              <Plus className="mr-2 h-4 w-4" /> Add Credits
+            </Button>
+          </Link>
         </div>
       </div>
 
@@ -190,6 +195,11 @@ export default async function ClientDashboard() {
               <Link href="/dashboard/client/profile" className="block">
                 <Button variant="secondary" className="w-full justify-start bg-white/10 text-white hover:bg-white/20 border-0 h-12">
                   Edit Profile
+                </Button>
+              </Link>
+              <Link href="/dashboard/client/payments" className="block">
+                <Button variant="secondary" className="w-full justify-start bg-white/10 text-white hover:bg-white/20 border-0 h-12">
+                  <CreditCard className="mr-2 h-4 w-4" /> Manage Payments
                 </Button>
               </Link>
             </CardContent>

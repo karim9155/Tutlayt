@@ -48,7 +48,7 @@ export async function signup(formData: FormData) {
     return redirect(`/signup?message=${encodeURIComponent(error.message)}`)
   }
 
-  return redirect("/login?message=Check email to continue sign in process")
+  return redirect("/login?signup=success")
 }
 
 export async function logout() {

@@ -16,9 +16,10 @@ interface InterpreterProfileViewProps {
     totalReviews: number
   }
   clientType?: string | null
+  documentsVerified?: boolean
 }
 
-export function InterpreterProfileView({ interpreter, reviews = [], stats = { averageRating: 0, totalReviews: 0 }, clientType }: InterpreterProfileViewProps) {
+export function InterpreterProfileView({ interpreter, reviews = [], stats = { averageRating: 0, totalReviews: 0 }, clientType, documentsVerified = false }: InterpreterProfileViewProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       {/* Left Column: Profile Info */}
@@ -284,6 +285,7 @@ export function InterpreterProfileView({ interpreter, reviews = [], stats = { av
               hourlyRate={(clientType === 'international') ? (interpreter.daily_rate_international || 0) : (interpreter.daily_rate || 0)}
               currency={(clientType === 'international') ? (interpreter.currency_international || 'USD') : 'TND'}
               clientType={clientType || 'local'}
+              documentsVerified={documentsVerified}
             />
             
             <p className="text-xs text-center text-[var(--medium-blue)]/70 mt-4">
