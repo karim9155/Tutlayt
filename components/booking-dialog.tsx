@@ -121,7 +121,10 @@ export function BookingDialog({ interpreterId, interpreterName, hourlyRate }: Bo
         <DialogHeader>
           <DialogTitle>Book {interpreterName}</DialogTitle>
           <DialogDescription>
-            Fill in the details for your interpretation assignment.
+            Fill in the details for your interpretation assignment.{" "}
+            <span className="text-amber-600 font-medium">
+              Note: a 10% platform fee is applied on every booking.
+            </span>
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-6 py-4">

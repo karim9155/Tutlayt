@@ -67,9 +67,24 @@ export async function updateBookingStatus(bookingId: string, status: 'accepted' 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: "Not authenticated" }
 
-  // If completing, ensure it's the interpreter (or maybe client too? Let's stick to interpreter for now as per request flow usually)
-  // Actually, usually the client confirms completion or interpreter marks it done. 
-  // Let's allow interpreter to mark as completed for now.
+  // Fetch booking details before updating
+  const { data: booking } = await supabase
+    .from("bookings")
+    .select("price, currency, client_id, status")
+    .eq("id", bookingId)
+    .single()
+
+  // When accepting: deduct balance from client
+  if (status === 'accepted' && booking) {
+    const { deductBalanceForBooking } = await import("@/app/actions/payments")
+    const deductResult = await deductBalanceForBooking(
+      bookingId,
+      booking.client_id,
+      booking.price ?? 0,
+      booking.currency ?? 'TND'
+    )
+    if (deductResult.error) return { error: deductResult.error }
+  }
 
   const { error } = await supabase
     .from("bookings")
