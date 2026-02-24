@@ -10,7 +10,6 @@ export default async function DashboardInterpreterProfilePage({ params }: { para
   // Fetch current user to determine client type
   const { data: { user } } = await supabase.auth.getUser()
   let clientType: string | null = null
-
   let documentsVerified = false
 
   if (user) {
