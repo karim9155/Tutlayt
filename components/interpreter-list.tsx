@@ -36,13 +36,10 @@ export function InterpreterList({
           : "New"
         const reviewCount = ratings.length
 
-        // Access Control Logic
-        // Mask name if not allowed to view PII
-        const displayName = canViewPII 
-          ? interpreter.profiles?.full_name 
-          : `Interpreter #${interpreter.id.slice(0, 8).toUpperCase()}`
+        // Names are always visible; only sensitive contact details (email, phone) are hidden
+        const displayName = interpreter.profiles?.full_name || `Interpreter #${interpreter.id.slice(0, 8).toUpperCase()}`
         
-        const showAvatar = canViewPII
+        const showAvatar = true
         const canViewProfile = true
 
         return (
