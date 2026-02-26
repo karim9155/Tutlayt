@@ -10,6 +10,37 @@ export async function createBooking(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: "Not authenticated" }
 
+  // --- Document signing guard ---
+  // Only apply for company/client accounts (not admins or interpreters)
+  const { data: userProfile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (!userProfile || userProfile.role === 'company') {
+    const { data: company } = await supabase
+      .from('companies')
+      .select('documents')
+      .eq('id', user.id)
+      .single()
+
+    // Fetch required templates from storage
+    const { data: templateFiles } = await supabase
+      .storage
+      .from('client-documents')
+      .list('', { limit: 100, sortBy: { column: 'name', order: 'asc' } })
+
+    const templates = (templateFiles || []).filter((f: any) => f.name.toLowerCase().endsWith('.pdf'))
+    const signedDocs: Record<string, any> = company?.documents || {}
+    const allSigned = templates.length > 0 && templates.every((t: any) => !!signedDocs[t.name])
+
+    if (!allSigned) {
+      return { error: "You must sign all required documents before booking. Please visit your dashboard to complete document signing." }
+    }
+  }
+  // --- End document signing guard ---
+
   const interpreterId = formData.get("interpreterId") as string
   const title = formData.get("title") as string
   const platform = formData.get("platform") as string

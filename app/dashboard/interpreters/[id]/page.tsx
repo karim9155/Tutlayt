@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import { notFound } from "next/navigation"
 import { InterpreterProfileView } from "@/components/interpreter-profile-view"
 import { getInterpreterReviews, calculateReviewStats } from "@/lib/reviews"
+import { getClientTemplates } from "@/lib/documents"
 
 export default async function DashboardInterpreterProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -15,13 +16,18 @@ export default async function DashboardInterpreterProfilePage({ params }: { para
   if (user) {
     const { data: company } = await supabase
       .from('companies')
-      .select('client_type, verification_status')
+      .select('client_type, verification_status, documents')
       .eq('id', user.id)
       .single()
     
     if (company) {
       clientType = company.client_type
-      documentsVerified = ['pending_approval', 'verified'].includes(company.verification_status)
+
+      // Check if the client has signed ALL required documents
+      const templates = await getClientTemplates()
+      const signedDocs: Record<string, any> = company.documents || {}
+      const allSigned = templates.length > 0 && templates.every((t: any) => !!signedDocs[t.name])
+      documentsVerified = allSigned
     }
   }
 

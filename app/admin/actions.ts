@@ -59,7 +59,8 @@ export async function uploadDocument(bucket: string, formData: FormData) {
   if (!file) return { error: "No file provided" }
 
   // Simple sanitization
-  const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`
+  const sanitizedBase = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+  const fileName = `${Date.now()}-${sanitizedBase}`
   
   const { error } = await supabase.storage
     .from(bucket)
@@ -68,6 +69,26 @@ export async function uploadDocument(bucket: string, formData: FormData) {
   if (error) {
     console.error(`Error uploading to ${bucket}:`, error)
     return { error: error.message }
+  }
+
+  // When a client-documents template is uploaded or replaced,
+  // reset the signing status for that document across ALL companies.
+  if (bucket === 'client-documents') {
+    const { data: companies } = await supabase
+      .from('companies')
+      .select('id, documents')
+      .not('documents', 'is', null)
+
+    for (const company of (companies || [])) {
+      const docs = (company.documents || {}) as Record<string, any>
+      // Remove any key whose base name (stripped timestamp) matches the uploaded file's base name
+      const updated = Object.fromEntries(
+        Object.entries(docs).filter(([key]) => key.replace(/^\d+-/, '') !== sanitizedBase)
+      )
+      if (Object.keys(updated).length !== Object.keys(docs).length) {
+        await supabase.from('companies').update({ documents: updated }).eq('id', company.id)
+      }
+    }
   }
 
   revalidatePath("/admin")
@@ -172,6 +193,23 @@ export async function deleteDocument(bucket: string, fileName: string) {
 
     if (error) {
         return { error: error.message }
+    }
+
+    // When a client-documents template is deleted,
+    // remove its signed entry from ALL companies so it no longer counts as signed.
+    if (bucket === 'client-documents') {
+      const { data: companies } = await supabase
+        .from('companies')
+        .select('id, documents')
+        .not('documents', 'is', null)
+
+      for (const company of (companies || [])) {
+        const docs = (company.documents || {}) as Record<string, any>
+        if (fileName in docs) {
+          const { [fileName]: _removed, ...updated } = docs
+          await supabase.from('companies').update({ documents: updated }).eq('id', company.id)
+        }
+      }
     }
 
     revalidatePath("/admin")
