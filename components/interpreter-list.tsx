@@ -38,9 +38,15 @@ export function InterpreterList({
 
         // Access Control Logic
         // Mask name if not allowed to view PII
-        const displayName = canViewPII 
-          ? interpreter.profiles?.full_name 
-          : `Interpreter #${interpreter.id.slice(0, 8).toUpperCase()}`
+        let displayName = interpreter.profiles?.full_name || `Interpreter #${interpreter.id.slice(0, 8).toUpperCase()}`
+        
+        if (!canViewPII && interpreter.profiles?.full_name) {
+            const parts = interpreter.profiles.full_name.trim().split(/\s+/)
+            if (parts.length > 0) {
+                // Take first letter of each name part
+                displayName = parts.map((p: string) => p[0].toUpperCase() + ".").join(" ")
+            }
+        }
         
         const showAvatar = canViewPII
         const canViewProfile = true

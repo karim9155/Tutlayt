@@ -1,6 +1,6 @@
 "use client"
 
-import { Calendar, Home, Search, Settings, User, LogOut, Briefcase, CreditCard } from "lucide-react"
+import { Calendar, Home, Search, Settings, User, LogOut, Briefcase, CreditCard, Headphones } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
@@ -31,6 +31,11 @@ const clientItems = [
     title: "Find Interpreters",
     url: "/dashboard/search",
     icon: Search,
+  },
+  {
+    title: "Rent Equipment",
+    url: "/equipment",
+    icon: Headphones,
   },
   {
     title: "My Bookings",

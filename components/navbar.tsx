@@ -30,6 +30,9 @@ export async function Navbar() {
               <Link href="/dashboard/search" className="text-sm font-medium text-[var(--deep-navy)] hover:text-[var(--teal)] transition-colors">
                 Find Interpreters
               </Link>
+              <Link href="/equipment" className="text-sm font-medium text-[var(--deep-navy)] hover:text-[var(--teal)] transition-colors">
+                Rent Equipment
+              </Link>
               <Link href="/dashboard/client" className="text-sm font-medium text-[var(--deep-navy)] hover:text-[var(--teal)] transition-colors">
                 Dashboard
               </Link>
@@ -47,6 +50,9 @@ export async function Navbar() {
             <>
               <Link href="/login" className="text-sm font-medium text-[var(--deep-navy)] hover:text-[var(--teal)] transition-colors">
                 Find a Pro
+              </Link>
+              <Link href="/equipment" className="text-sm font-medium text-[var(--deep-navy)] hover:text-[var(--teal)] transition-colors">
+                Rent Equipment
               </Link>
               <Link href="/signup?role=client" className="text-sm font-medium text-[var(--deep-navy)] hover:text-[var(--teal)] transition-colors">
                 For Clients
