@@ -9,7 +9,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import {
   AlertDialog,
@@ -65,59 +64,41 @@ export function BookingDialog({ interpreterId, interpreterName, hourlyRate, docu
     try {
       const supabase = createClient()
       
-      // Calculate price
       const startDate = formData.get("startDate") as string
       const startTime = formData.get("startTime") as string
-      const endDate = formData.get("startDate") as string // Assuming single day for now or same date
       const endTime = formData.get("endTime") as string
       
       if (startDate && startTime && endTime) {
         const start = new Date(`${startDate}T${startTime}`)
         const end = new Date(`${startDate}T${endTime}`)
         const durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60)
-        
         if (durationHours > 0) {
-          const rate = hourlyRate || 0
-          const totalPrice = durationHours * rate
-          formData.append("price", totalPrice.toFixed(2))
+          formData.append("price", (durationHours * (hourlyRate || 0)).toFixed(2))
         } else {
-           formData.append("price", (hourlyRate || 0).toString())
+          formData.append("price", (hourlyRate || 0).toString())
         }
       } else {
-         formData.append("price", (hourlyRate || 0).toString())
+        formData.append("price", (hourlyRate || 0).toString())
       }
 
-      // Handle file upload if exists
       if (file) {
         setUploading(true)
-        
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) throw new Error("User not authenticated")
-
         const fileExt = file.name.split('.').pop()
-        const fileName = `${Math.random()}.${fileExt}`
-        // Upload to user's folder to satisfy RLS policy
-        const filePath = `${user.id}/${fileName}`
-
-        const { error: uploadError, data } = await supabase.storage
+        const filePath = `${user.id}/${Math.random()}.${fileExt}`
+        const { error: uploadError } = await supabase.storage
           .from('client-documents')
           .upload(filePath, file)
-
-        if (uploadError) {
-          console.error("Upload error:", uploadError)
-          throw new Error("Error uploading file")
-        }
-
+        if (uploadError) throw new Error("Error uploading file")
         const { data: { publicUrl } } = supabase.storage
           .from('client-documents')
           .getPublicUrl(filePath)
-
         formData.append("preparationMaterialsUrl", publicUrl)
         setUploading(false)
       }
 
       const result = await createBooking(formData)
-      
       if (result?.error) {
         toast.error(result.error)
       } else {
@@ -135,25 +116,25 @@ export function BookingDialog({ interpreterId, interpreterName, hourlyRate, docu
 
   return (
     <>
-      {/* Error Alert: documents not signed */}
+      {/* Error: documents not signed */}
       <AlertDialog open={showErrorAlert} onOpenChange={setShowErrorAlert}>
         <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
             <div className="flex items-center justify-center w-14 h-14 bg-red-100 rounded-full mx-auto mb-2">
               <AlertCircle className="w-8 h-8 text-red-600" />
             </div>
-            <AlertDialogTitle className="text-center text-[var(--deep-navy)]">
+            <AlertDialogTitle className="text-center">
               Documents Required
             </AlertDialogTitle>
             <AlertDialogDescription className="text-center">
-              You must sign your required documents and be verified before you can book an interpreter.
+              You must sign your required documents before you can book an interpreter.
               Please go to your dashboard and complete the document signing process.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col sm:flex-col gap-2">
             <Link href="/dashboard/client" className="w-full">
               <AlertDialogAction className="w-full bg-[var(--teal)] hover:bg-[var(--teal)]/90 text-white">
-                Go to Dashboard & Sign Documents
+                Go to Dashboard &amp; Sign Documents
               </AlertDialogAction>
             </Link>
             <Button variant="outline" className="w-full" onClick={() => setShowErrorAlert(false)}>
@@ -163,19 +144,20 @@ export function BookingDialog({ interpreterId, interpreterName, hourlyRate, docu
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Success Alert: booking sent */}
+      {/* Success: booking sent */}
       <AlertDialog open={showSuccessAlert} onOpenChange={setShowSuccessAlert}>
         <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
             <div className="flex items-center justify-center w-14 h-14 bg-green-100 rounded-full mx-auto mb-2">
               <CheckCircle2 className="w-8 h-8 text-green-600" />
             </div>
-            <AlertDialogTitle className="text-center text-[var(--deep-navy)]">
+            <AlertDialogTitle className="text-center">
               Booking Request Sent!
             </AlertDialogTitle>
             <AlertDialogDescription className="text-center">
-              Your booking request for <span className="font-semibold text-[var(--deep-navy)]">{interpreterName}</span> has been sent successfully.
-              You will be notified once the interpreter responds to your request.
+              Your booking request for{" "}
+              <span className="font-semibold text-[var(--deep-navy)]">{interpreterName}</span>{" "}
+              has been sent successfully. You will be notified once the interpreter responds.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col sm:flex-col gap-2">
@@ -191,7 +173,7 @@ export function BookingDialog({ interpreterId, interpreterName, hourlyRate, docu
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Book Now trigger button */}
+      {/* Book Now button */}
       <Button
         onClick={handleBookNowClick}
         className="w-full bg-[var(--teal)] hover:bg-[var(--teal)]/90 text-white font-semibold py-6 text-lg shadow-lg shadow-[var(--teal)]/20 transition-all hover:scale-[1.02]"
@@ -205,9 +187,9 @@ export function BookingDialog({ interpreterId, interpreterName, hourlyRate, docu
           <DialogHeader>
             <DialogTitle>Book {interpreterName}</DialogTitle>
             <DialogDescription>
-              Fill in the details for your interpretation assignment.{" "}
-              <span className="text-amber-600 font-medium">
-                Note: a 10% platform fee is applied on every booking.
+              Fill in the details for your interpretation assignment.
+              <span className="block mt-1 text-amber-600 font-medium">
+                Note: a 20% platform fee is applied on every booking.
               </span>
             </DialogDescription>
           </DialogHeader>
@@ -216,9 +198,7 @@ export function BookingDialog({ interpreterId, interpreterName, hourlyRate, docu
               <div className="space-y-2">
                 <Label htmlFor="platform">Platform</Label>
                 <Select name="platform" defaultValue="Zoom">
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select platform" />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Select platform" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Zoom">Zoom</SelectItem>
                     <SelectItem value="Teams">Microsoft Teams</SelectItem>
@@ -232,9 +212,7 @@ export function BookingDialog({ interpreterId, interpreterName, hourlyRate, docu
               <div className="space-y-2">
                 <Label htmlFor="subjectMatter">Subject Matter</Label>
                 <Select name="subjectMatter" defaultValue="General">
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select subject" />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Select subject" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="General">General</SelectItem>
                     <SelectItem value="Business / Trade">Business / Trade</SelectItem>
@@ -259,12 +237,10 @@ export function BookingDialog({ interpreterId, interpreterName, hourlyRate, docu
               <div className="space-y-2">
                 <Label htmlFor="timezone">Timezone</Label>
                 <Select name="timezone" defaultValue="UTC">
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select timezone" />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Select timezone" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="UTC">UTC</SelectItem>
-                    <SelectItem value="EST">Eastern Time (US & Canada)</SelectItem>
+                    <SelectItem value="EST">Eastern Time (US &amp; Canada)</SelectItem>
                     <SelectItem value="CET">Central European Time</SelectItem>
                     <SelectItem value="PST">Pacific Time</SelectItem>
                   </SelectContent>
@@ -288,8 +264,6 @@ export function BookingDialog({ interpreterId, interpreterName, hourlyRate, docu
               <Input id="languages" name="languages" placeholder="e.g. English -> Arabic" required />
             </div>
 
-            {/* Price input removed - calculated automatically */}
-
             <div className="space-y-2">
               <Label htmlFor="meetingLink">Meeting Link</Label>
               <Input id="meetingLink" name="meetingLink" placeholder="https://..." />
@@ -303,8 +277,8 @@ export function BookingDialog({ interpreterId, interpreterName, hourlyRate, docu
             <div className="space-y-2">
               <Label>Preparation Materials</Label>
               <div className="border-2 border-dashed border-gray-200 rounded-lg p-4 text-center hover:bg-gray-50 transition-colors cursor-pointer relative">
-                <input 
-                  type="file" 
+                <input
+                  type="file"
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   onChange={(e) => setFile(e.target.files?.[0] || null)}
                 />
@@ -335,3 +309,6 @@ export function BookingDialog({ interpreterId, interpreterName, hourlyRate, docu
     </>
   )
 }
+
+
+

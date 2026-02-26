@@ -113,9 +113,9 @@ export function BuyCreditsDialog({ currency, isLocal, children }: BuyCreditsDial
           </DialogTitle>
           <DialogDescription>
             Enter the amount you want to add to your balance. You will be redirected to our
-            secure payment page to complete the transaction.{" "}
-            <span className="text-amber-600 font-medium">
-              Note: a 10% platform fee is applied on every booking.
+            secure payment page to complete the transaction.
+            <span className="block mt-1 text-amber-600 font-medium">
+              Note: a 20% platform fee is applied on every booking.
             </span>
           </DialogDescription>
         </DialogHeader>
