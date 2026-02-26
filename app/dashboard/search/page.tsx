@@ -2,9 +2,13 @@ import { createClient } from "@/lib/supabase/server"
 import { getInterpreters } from "@/lib/queries"
 import { SearchFilters } from "@/components/search-filters"
 import { InterpreterList } from "@/components/interpreter-list"
+import { PaginationControls } from "@/components/pagination-controls"
 
-export default async function DashboardSearchPage({ searchParams }: { searchParams: Promise<{ city?: string, language?: string, specialization?: string }> }) {
+const ITEMS_PER_PAGE = 5
+
+export default async function DashboardSearchPage({ searchParams }: { searchParams: Promise<{ city?: string, language?: string, specialization?: string, page?: string }> }) {
   const filters = await searchParams
+  const currentPage = Math.max(1, parseInt(filters.page || "1", 10))
   const supabase = await createClient()
 
   // Check client verification status
@@ -41,11 +45,18 @@ export default async function DashboardSearchPage({ searchParams }: { searchPara
     }
   }
 
-  const { data: interpreters, error } = await getInterpreters(supabase, filters)
+  const { data: allInterpreters, error } = await getInterpreters(supabase, filters)
 
   if (error) {
     console.error("Error fetching interpreters:", error)
   }
+
+  const interpreters = allInterpreters || []
+  const totalPages = Math.ceil(interpreters.length / ITEMS_PER_PAGE)
+  const paginatedInterpreters = interpreters.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  )
 
   return (
     <div className="space-y-6">
@@ -80,14 +91,25 @@ export default async function DashboardSearchPage({ searchParams }: { searchPara
         {/* Results Grid */}
         <div className="flex-1">
           <h2 className="text-xl font-semibold mb-4 text-[var(--deep-navy)]">
-            Available Interpreters ({interpreters?.length || 0})
+            Available Interpreters ({interpreters.length})
           </h2>
 
           <InterpreterList 
-            interpreters={interpreters} 
+            interpreters={paginatedInterpreters} 
             basePath="/dashboard/interpreters" 
             userRole={profile?.role} 
             clientType={clientType}
+          />
+
+          <PaginationControls
+            currentPage={currentPage}
+            totalPages={totalPages}
+            basePath="/dashboard/search"
+            params={{
+              city: filters.city,
+              language: filters.language,
+              specialization: filters.specialization,
+            }}
           />
         </div>
       </div>
