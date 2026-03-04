@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import Image from "next/image"
+import { PartnerLogo } from "@/components/partner-logo"
 
 export default function LandingPage() {
   return (
@@ -177,6 +178,77 @@ export default function LandingPage() {
                   </p>
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Partners Section */}
+        <section className="py-24 bg-gradient-to-b from-white to-[var(--azureish-white)] border-t border-[var(--teal)]/10">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-16">
+              <div className="inline-flex items-center rounded-full border border-[var(--teal)]/30 bg-[var(--teal)]/5 px-4 py-1.5 text-sm font-medium text-[var(--teal)] mb-5">
+                ✦ Official Partnership
+              </div>
+              <h2 className="text-4xl md:text-5xl font-bold text-[var(--deep-navy)] mb-4">
+                Trusted by Leading Organizations
+              </h2>
+              <p className="text-lg text-[var(--medium-blue)] max-w-2xl mx-auto font-light">
+                We partner with key institutions to extend our reach and deliver premium language services across international markets.
+              </p>
+            </div>
+
+            <div className="flex justify-center">
+              <a
+                href="https://www.conectinternational.tn/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group relative w-full max-w-3xl"
+              >
+                {/* Glow effect */}
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-[var(--teal)] to-blue-400 rounded-3xl opacity-0 group-hover:opacity-20 transition-all duration-500 blur-sm" />
+
+                <div className="relative flex flex-col md:flex-row items-center gap-10 bg-white border border-gray-100 group-hover:border-[var(--teal)]/30 rounded-3xl px-10 py-10 shadow-lg group-hover:shadow-2xl group-hover:shadow-[var(--teal)]/10 transition-all duration-300">
+
+                  {/* Logo box */}
+                  <div className="shrink-0 flex items-center justify-center bg-[var(--azureish-white)] rounded-2xl w-48 h-36 border border-gray-100 shadow-inner overflow-hidden p-4">
+                    <PartnerLogo
+                      src="/images/CI2.gif"
+                      alt="CONECT International"
+                      fallback="CONECT INTERNATIONAL"
+                    />
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 text-center md:text-left">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-green-50 border border-green-200 px-3 py-1 text-xs font-semibold text-green-700 mb-4">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                      Official Partner
+                    </div>
+
+                    <h3 className="text-2xl font-bold text-[var(--deep-navy)] mb-2 group-hover:text-[var(--teal)] transition-colors">
+                      CONECT International
+                    </h3>
+                    <p className="text-[var(--medium-blue)] leading-relaxed mb-5 text-base">
+                      Tunisia's leading confederation for international business, facilitating economic missions, cross-border partnerships, and trade between Tunisia and markets across Africa, Europe, and the world. Together, we bring expert language services to every international endeavor.
+                    </p>
+
+                    <div className="flex flex-wrap gap-2 justify-center md:justify-start mb-6">
+                      {["Business Development", "International Trade", "Africa & Europe", "Tunis, Tunisia"].map(tag => (
+                        <span key={tag} className="text-xs bg-[var(--teal)]/10 text-[var(--teal)] rounded-full px-3 py-1 font-medium border border-[var(--teal)]/10">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center gap-2 text-[var(--teal)] font-semibold text-sm group-hover:gap-3 transition-all">
+                      Visit conectinternational.tn
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </a>
             </div>
           </div>
         </section>
