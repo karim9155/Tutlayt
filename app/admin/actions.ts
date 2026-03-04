@@ -299,3 +299,25 @@ export async function requestMoreInfo(type: "client" | "interpreter", id: string
   revalidatePath("/admin")
   return { success: true }
 }
+
+export async function updateEquipmentRequestStatus(id: string, status: string) {
+  try {
+    await ensureAdmin()
+  } catch (e) {
+    return { error: "Unauthorized" }
+  }
+
+  const supabase = createAdminClient()
+  const { error } = await supabase
+    .from("equipment_requests")
+    .update({ status })
+    .eq("id", id)
+
+  if (error) {
+    console.error("Error updating equipment request status:", error)
+    return { error: "Failed to update status. Please try again." }
+  }
+
+  revalidatePath("/admin/equipment")
+  return { success: true }
+}

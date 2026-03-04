@@ -2,6 +2,7 @@ import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
+import { createAdminClient } from "@/lib/supabase/admin"
 
 export default async function AdminProtectedLayout({
   children,
@@ -15,9 +16,20 @@ export default async function AdminProtectedLayout({
     redirect("/admin/login")
   }
 
+  // Fetch pending equipment requests count for badge
+  let pendingEquipmentCount = 0
+  try {
+    const supabase = createAdminClient()
+    const { count, error } = await supabase
+      .from("equipment_requests")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "pending")
+    if (!error) pendingEquipmentCount = count || 0
+  } catch (_) {}
+
   return (
     <SidebarProvider>
-      <AdminSidebar />
+      <AdminSidebar pendingEquipmentCount={pendingEquipmentCount} />
       <main className="w-full">
         <div className="p-4 flex items-center border-b bg-white">
            <SidebarTrigger />

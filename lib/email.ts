@@ -15,7 +15,7 @@ export async function sendEmail(
 
   try {
     const data = await resend.emails.send({
-      from: 'Tutlayt Admin <onboarding@resend.dev>', 
+      from: process.env.RESEND_FROM_EMAIL || 'Tutlayt Admin <onboarding@resend.dev>', 
       reply_to: 'klilakarim35@gmail.com',
       to: [to],
       subject: subject,

@@ -1,6 +1,6 @@
 "use client"
 
-import { Home, FileText, LogOut } from "lucide-react"
+import { Home, FileText, LogOut, Mic } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
@@ -30,9 +30,18 @@ const adminItems = [
     url: "/admin/documents",
     icon: FileText,
   },
+  {
+    title: "Equipment",
+    url: "/admin/equipment",
+    icon: Mic,
+  },
 ]
 
-export function AdminSidebar() {
+interface AdminSidebarProps {
+  pendingEquipmentCount?: number
+}
+
+export function AdminSidebar({ pendingEquipmentCount = 0 }: AdminSidebarProps) {
   const pathname = usePathname()
 
   return (
@@ -56,6 +65,11 @@ export function AdminSidebar() {
                     <Link href={item.url}>
                       <item.icon />
                       <span>{item.title}</span>
+                      {item.url === "/admin/equipment" && pendingEquipmentCount > 0 && (
+                        <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[10px] font-bold text-white">
+                          {pendingEquipmentCount}
+                        </span>
+                      )}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
