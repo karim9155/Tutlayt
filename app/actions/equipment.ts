@@ -6,7 +6,39 @@ import { getAdminEmails, ADMIN_EMAILS } from "@/lib/admin-emails"
 
 export async function submitEquipmentRequest(formData: FormData) {
   const supabase = await createClient()
-  
+
+  // --- Document signing guard ---
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: "You must be logged in to submit an equipment request." }
+
+  const { data: userProfile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (!userProfile || userProfile.role === 'company') {
+    const { data: company } = await supabase
+      .from('companies')
+      .select('documents')
+      .eq('id', user.id)
+      .single()
+
+    const { data: templateFiles } = await supabase
+      .storage
+      .from('client-documents')
+      .list('', { limit: 100, sortBy: { column: 'name', order: 'asc' } })
+
+    const templates = (templateFiles || []).filter((f: any) => f.name.toLowerCase().endsWith('.pdf'))
+    const signedDocs: Record<string, any> = company?.documents || {}
+    const allSigned = templates.length > 0 && templates.every((t: any) => !!signedDocs[t.name])
+
+    if (!allSigned) {
+      return { error: "You must sign all required documents before renting equipment. Please visit your dashboard to complete document signing." }
+    }
+  }
+  // --- End document signing guard ---
+
   const clientName = formData.get("clientName") as string
   const companyName = formData.get("companyName") as string
   const clientEmail = formData.get("clientEmail") as string

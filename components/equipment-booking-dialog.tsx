@@ -9,15 +9,24 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { toast } from "sonner"
 import { submitEquipmentRequest } from "@/app/actions/equipment"
-import { Loader2, Calendar, Mail, FileText, CheckSquare, Building } from "lucide-react"
+import { Loader2, Calendar, Mail, FileText, Building, AlertCircle } from "lucide-react"
+import Link from "next/link"
 
 const equipmentOptions = [
   { id: "booths", label: "Interpretation Booths (ISO 4043)" },
@@ -29,10 +38,28 @@ const equipmentOptions = [
   { id: "tech_support", label: "On-site Technical Support" },
 ]
 
-export function EquipmentBookingDialog() {
+interface EquipmentBookingDialogProps {
+  isCompanyUser?: boolean
+  documentsVerified?: boolean
+}
+
+export function EquipmentBookingDialog({ isCompanyUser = false, documentsVerified = false }: EquipmentBookingDialogProps) {
   const [open, setOpen] = useState(false)
+  const [showErrorAlert, setShowErrorAlert] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [selectedEquipment, setSelectedEquipment] = useState<string[]>([])
+
+  // Block only logged-in company users who haven't signed all documents.
+  // Anonymous visitors or other roles can use the form freely.
+  const isBlocked = isCompanyUser && !documentsVerified
+
+  function handleRequestClick() {
+    if (isBlocked) {
+      setShowErrorAlert(true)
+    } else {
+      setOpen(true)
+    }
+  }
 
   const handleEquipmentChange = (id: string, checked: boolean) => {
     setSelectedEquipment((prev) =>
@@ -73,12 +100,44 @@ export function EquipmentBookingDialog() {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="lg" className="bg-[var(--teal)] hover:bg-[var(--teal-blue)] text-white font-semibold px-8 py-6 text-lg rounded-full shadow-lg shadow-[var(--teal)]/20 transition-all hover:shadow-[var(--teal)]/40 hover:-translate-y-1">
-          Request a Quote
-        </Button>
-      </DialogTrigger>
+    <>
+      {/* Error: documents not signed */}
+      <AlertDialog open={showErrorAlert} onOpenChange={setShowErrorAlert}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <div className="flex items-center justify-center w-14 h-14 bg-red-100 rounded-full mx-auto mb-2">
+              <AlertCircle className="w-8 h-8 text-red-600" />
+            </div>
+            <AlertDialogTitle className="text-center">
+              Documents Required
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-center">
+              You must sign your required documents before you can rent equipment.
+              Please go to your dashboard and complete the document signing process.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-col gap-2">
+            <Link href="/dashboard/client" className="w-full">
+              <AlertDialogAction className="w-full bg-[var(--teal)] hover:bg-[var(--teal)]/90 text-white">
+                Go to Dashboard &amp; Sign Documents
+              </AlertDialogAction>
+            </Link>
+            <Button variant="outline" className="w-full" onClick={() => setShowErrorAlert(false)}>
+              Cancel
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Button
+        size="lg"
+        onClick={handleRequestClick}
+        className="bg-[var(--teal)] hover:bg-[var(--teal-blue)] text-white font-semibold px-8 py-6 text-lg rounded-full shadow-lg shadow-[var(--teal)]/20 transition-all hover:shadow-[var(--teal)]/40 hover:-translate-y-1"
+      >
+        Request a Quote
+      </Button>
+
+      <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-[var(--deep-navy)]">Renting Equipment</DialogTitle>
@@ -163,5 +222,6 @@ export function EquipmentBookingDialog() {
         </form>
       </DialogContent>
     </Dialog>
+    </>
   )
 }

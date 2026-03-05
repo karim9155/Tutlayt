@@ -2,10 +2,42 @@ import Link from "next/link"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { EquipmentBookingDialog } from "@/components/equipment-booking-dialog"
-import { Mic2, Headphones, Speaker, Projector, Radio, Disc, Settings, CheckCircle } from "lucide-react"
+import { Headphones, Speaker, Projector, Radio, Disc, Settings, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { createClient } from "@/lib/supabase/server"
+import { getClientTemplates } from "@/lib/documents"
 
-export default function EquipmentPage() {
+export default async function EquipmentPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  let isCompanyUser = false
+  let documentsVerified = false
+
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (profile?.role === 'company') {
+      isCompanyUser = true
+
+      const { data: company } = await supabase
+        .from('companies')
+        .select('documents')
+        .eq('id', user.id)
+        .single()
+
+      if (company) {
+        const templates = await getClientTemplates()
+        const signedDocs: Record<string, any> = company.documents || {}
+        documentsVerified = templates.length > 0 && templates.every((t: any) => !!signedDocs[t.name])
+      }
+    }
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-[var(--azureish-white)] font-sans">
       <Navbar />
@@ -24,7 +56,7 @@ export default function EquipmentPage() {
               From ISO-compliant booths to crystal-clear headsets.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <EquipmentBookingDialog />
+              <EquipmentBookingDialog isCompanyUser={isCompanyUser} documentsVerified={documentsVerified} />
             </div>
           </div>
         </section>
@@ -169,13 +201,17 @@ export default function EquipmentPage() {
                   </div>
                 </div>
                 <div className="mt-10">
-                  <EquipmentBookingDialog />
+                  <EquipmentBookingDialog isCompanyUser={isCompanyUser} documentsVerified={documentsVerified} />
                 </div>
               </div>
               <div className="relative">
-                 <div className="aspect-video bg-gradient-to-tr from-gray-200 to-gray-300 rounded-2xl shadow-xl overflow-hidden flex items-center justify-center">
-                    <Mic2 className="w-32 h-32 text-gray-400 opacity-50" />
-                    <div className="absolute inset-0 flex items-center justify-center text-gray-500 font-medium">Image Placeholder (Technicians)</div>
+                 <div className="aspect-video rounded-2xl shadow-xl overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src="https://www.languagesunlimited.com/wp-content/uploads/2022/08/mic-1.webp"
+                      alt="Professional simultaneous interpretation and translation equipment"
+                      className="w-full h-full object-cover"
+                    />
                  </div>
                  {/* Decorative elements */}
                  <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-[var(--teal)]/20 rounded-full blur-2xl"></div>

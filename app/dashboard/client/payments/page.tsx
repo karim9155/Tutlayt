@@ -43,7 +43,7 @@ export default async function PaymentsPage({ searchParams }: PaymentsPageProps) 
   const currency = company?.client_type === "international" ? "USD" : "TND"
 
   return (
-    <div className="space-y-8 p-6 max-w-6xl">
+    <div className="space-y-8 p-6 max-w-6xl mx-auto">
       {/* Page Header */}
       <div>
         <h1 className="text-3xl font-bold text-[var(--deep-navy)]">Payments</h1>

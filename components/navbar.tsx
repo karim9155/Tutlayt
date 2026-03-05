@@ -27,20 +27,35 @@ export async function Navbar() {
         <nav className="hidden md:flex items-center gap-8">
           {role === 'company' ? (
             <>
+              <Link href="/dashboard/client" className="text-sm font-medium text-[var(--deep-navy)] hover:text-[var(--teal)] transition-colors">
+                Dashboard
+              </Link>
               <Link href="/dashboard/search" className="text-sm font-medium text-[var(--deep-navy)] hover:text-[var(--teal)] transition-colors">
                 Find Interpreters
               </Link>
               <Link href="/equipment" className="text-sm font-medium text-[var(--deep-navy)] hover:text-[var(--teal)] transition-colors">
                 Rent Equipment
               </Link>
-              <Link href="/dashboard/client" className="text-sm font-medium text-[var(--deep-navy)] hover:text-[var(--teal)] transition-colors">
-                Dashboard
+              <Link href="/dashboard/client/bookings" className="text-sm font-medium text-[var(--deep-navy)] hover:text-[var(--teal)] transition-colors">
+                My Bookings
+              </Link>
+              <Link href="/dashboard/client/payments" className="text-sm font-medium text-[var(--deep-navy)] hover:text-[var(--teal)] transition-colors">
+                Payments
+              </Link>
+              <Link href="/dashboard/client/profile" className="text-sm font-medium text-[var(--deep-navy)] hover:text-[var(--teal)] transition-colors">
+                Profile
               </Link>
             </>
           ) : role === 'interpreter' ? (
             <>
               <Link href="/dashboard/interpreter" className="text-sm font-medium text-[var(--deep-navy)] hover:text-[var(--teal)] transition-colors">
                 Dashboard
+              </Link>
+              <Link href="/dashboard/interpreter/availability" className="text-sm font-medium text-[var(--deep-navy)] hover:text-[var(--teal)] transition-colors">
+                My Availability
+              </Link>
+              <Link href="/dashboard/interpreter/missions" className="text-sm font-medium text-[var(--deep-navy)] hover:text-[var(--teal)] transition-colors">
+                My Missions
               </Link>
               <Link href="/dashboard/interpreter/profile" className="text-sm font-medium text-[var(--deep-navy)] hover:text-[var(--teal)] transition-colors">
                 Profile
