@@ -319,6 +319,43 @@ export function InterpreterProfileForm({ profile, interpreter }: InterpreterProf
                 </div>
 
                 <div className="space-y-2">
+                  <Label className="text-[var(--deep-navy)] font-semibold">Services Offered</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { id: "svc_interpretation", name: "services", value: "interpretation", label: "Interpretation" },
+                      { id: "svc_translation", name: "services", value: "translation", label: "Translation" },
+                      { id: "svc_sworn_translation", name: "services", value: "sworn_translation", label: "Sworn Translation" },
+                      { id: "svc_proofreading", name: "services", value: "proofreading", label: "Proofreading" },
+                      { id: "svc_editing", name: "services", value: "editing", label: "Editing" },
+                    ].map(svc => (
+                      <div key={svc.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={svc.id}
+                          name={svc.name}
+                          value={svc.value}
+                          defaultChecked={Array.isArray(interpreter?.services) && interpreter.services.includes(svc.value)}
+                        />
+                        <Label htmlFor={svc.id} className="text-[var(--deep-navy)]">{svc.label}</Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="ratePerWord" className="text-[var(--deep-navy)]">Translation Rate (TND/word)</Label>
+                    <Input 
+                      id="ratePerWord" 
+                      name="ratePerWord" 
+                      type="number"
+                      step="0.001"
+                      defaultValue={interpreter?.rate_per_word} 
+                      className="border-gray-200 focus:border-[var(--teal)] focus:ring-[var(--teal)] rounded-lg bg-[var(--azureish-white)]/50"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="primaryExpertise" className="text-[var(--deep-navy)]">Primary Subject Matter Expertise</Label>
                   <TagInput 
                     id="primaryExpertise" 

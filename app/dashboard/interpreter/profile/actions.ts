@@ -33,6 +33,11 @@ export async function updateProfile(formData: FormData) {
   const secondaryExpertise = formData.get("secondaryExpertise")?.toString().split(",").map(s => s.trim()).filter(Boolean) || []
   const equipment = formData.get("equipment")?.toString().split(",").map(s => s.trim()).filter(Boolean) || []
   
+  // Services & additional rates
+  const services = formData.getAll("services").map(s => s.toString()).filter(Boolean)
+  const ratePerWord = parseFloat(formData.get("ratePerWord") as string) || null
+  const equipmentDailyRate = parseFloat(formData.get("equipmentDailyRate") as string) || null
+  
   const aiicMember = formData.get("aiicMember") === "on"
   const isSworn = formData.get("isSworn") === "on"
   const otherAccreditation = formData.get("otherAccreditation") as string
@@ -135,6 +140,9 @@ export async function updateProfile(formData: FormData) {
       daily_rate_international: dailyRateInternational,
       currency_international: currencyInternational,
       equipment: equipment,
+      services: services,
+      rate_per_word: ratePerWord,
+      equipment_daily_rate: equipmentDailyRate,
       education_history: educationHistory,
       
       primary_expertise: primaryExpertise,

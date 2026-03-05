@@ -4,10 +4,11 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { logout } from "@/app/auth/actions"
-import { CreditCard, Plus, Calendar, Search, AlertCircle, ShieldAlert } from "lucide-react"
+import { CreditCard, Plus, Calendar, Search, AlertCircle, ShieldAlert, UserSearch } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { ClientDocumentSigning } from "@/components/client-document-signing"
 import { getClientTemplates } from "@/lib/documents"
+import { InterpreterRequestDialog } from "@/components/interpreter-request-dialog"
 
 export default async function ClientDashboard() {
   const supabase = await createClient()
@@ -192,6 +193,7 @@ export default async function ClientDashboard() {
                   <Search className="mr-2 h-4 w-4" /> Find Interpreter
                 </Button>
               </Link>
+              <InterpreterRequestDialog documentsVerified={true} />
               <Link href="/dashboard/client/profile" className="block">
                 <Button variant="secondary" className="w-full justify-start bg-white/10 text-white hover:bg-white/20 border-0 h-12">
                   Edit Profile

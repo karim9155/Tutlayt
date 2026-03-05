@@ -101,7 +101,7 @@ export async function updateBookingStatus(bookingId: string, status: 'accepted' 
   // Fetch booking details before updating
   const { data: booking } = await supabase
     .from("bookings")
-    .select("price, currency, client_id, status")
+    .select("price, currency, client_id, status, interpreter_request_id")
     .eq("id", bookingId)
     .single()
 
@@ -128,7 +128,31 @@ export async function updateBookingStatus(bookingId: string, status: 'accepted' 
     return { error: error.message }
   }
 
+  // If this booking is linked to an interpreter request, update the request status
+  if (booking?.interpreter_request_id) {
+    if (status === 'accepted') {
+      // Mark the request as fulfilled
+      await supabase
+        .from("interpreter_requests")
+        .update({ status: 'fulfilled', updated_at: new Date().toISOString() })
+        .eq("id", booking.interpreter_request_id)
+    } else if (status === 'declined') {
+      // Reset the request back to pending so admin can reassign
+      await supabase
+        .from("interpreter_requests")
+        .update({
+          status: 'declined',
+          assigned_interpreter_id: null,
+          booking_id: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", booking.interpreter_request_id)
+    }
+  }
+
   revalidatePath("/dashboard/interpreter/missions")
   revalidatePath("/dashboard/client/bookings")
+  revalidatePath("/dashboard/client/requests")
+  revalidatePath("/admin/requests")
   return { success: true }
 }

@@ -321,3 +321,371 @@ export async function updateEquipmentRequestStatus(id: string, status: string) {
   revalidatePath("/admin/equipment")
   return { success: true }
 }
+
+// ===========================================
+// Interpreter Request Management
+// ===========================================
+
+export async function getInterpreterRequests() {
+  try {
+    await ensureAdmin()
+  } catch (e) {
+    return { error: "Unauthorized", data: null }
+  }
+  const supabase = createAdminClient()
+
+  // Fetch requests without joins (joins are unreliable with new tables due to schema cache)
+  const { data: requests, error } = await supabase
+    .from("interpreter_requests")
+    .select("*")
+    .order("created_at", { ascending: false })
+
+  const tableNotFound = error && (
+    (error as any).code === "42P01" ||
+    (error as any).code === "PGRST200" ||
+    (error as any).message?.includes("does not exist") ||
+    (error as any).message?.includes("schema cache")
+  )
+
+  if (error && !tableNotFound) {
+    console.error("Error fetching interpreter requests:", error)
+    return { error: error.message, data: null }
+  }
+
+  if (tableNotFound) {
+    return { error: "TABLE_NOT_FOUND", data: null }
+  }
+
+  if (!requests || requests.length === 0) {
+    return { data: requests || [] }
+  }
+
+  // Collect unique IDs for batch lookups
+  const clientIds = [...new Set(requests.map((r: any) => r.client_id).filter(Boolean))]
+  const interpreterIds = [...new Set([
+    ...requests.map((r: any) => r.suggested_interpreter_id),
+    ...requests.map((r: any) => r.assigned_interpreter_id),
+  ].filter(Boolean))]
+
+  // Batch fetch profiles and interpreters
+  const [profilesResult, interpretersResult] = await Promise.all([
+    clientIds.length > 0
+      ? supabase.from("profiles").select("id, full_name, email").in("id", clientIds)
+      : { data: [] },
+    interpreterIds.length > 0
+      ? supabase.from("interpreters").select("id, full_name, hourly_rate").in("id", interpreterIds)
+      : { data: [] },
+  ])
+
+  const profilesMap = new Map((profilesResult.data || []).map((p: any) => [p.id, p]))
+  const interpretersMap = new Map((interpretersResult.data || []).map((i: any) => [i.id, i]))
+
+  // Attach related data to each request
+  const enrichedRequests = requests.map((r: any) => ({
+    ...r,
+    client: profilesMap.get(r.client_id) || null,
+    suggested_interpreter: interpretersMap.get(r.suggested_interpreter_id) || null,
+    assigned_interpreter: interpretersMap.get(r.assigned_interpreter_id) || null,
+  }))
+
+  return { data: enrichedRequests }
+}
+
+export async function getVerifiedInterpreters() {
+  try {
+    await ensureAdmin()
+  } catch (e) {
+    return { error: "Unauthorized", data: null }
+  }
+  const supabase = createAdminClient()
+
+  // Fetch verified interpreters
+  const { data: interpreterRows, error } = await supabase
+    .from("interpreters")
+    .select("*")
+    .eq("verified", true)
+
+  if (error) {
+    // Don't crash if table doesn't exist yet
+    const tableNotFound =
+      (error as any).code === "42P01" ||
+      (error as any).code === "PGRST200" ||
+      (error as any).message?.includes("does not exist") ||
+      (error as any).message?.includes("schema cache")
+    if (!tableNotFound) {
+      console.error("Error fetching interpreters:", error)
+    }
+    return { error: tableNotFound ? "TABLE_NOT_FOUND" : error.message, data: null }
+  }
+
+  if (!interpreterRows || interpreterRows.length === 0) {
+    return { data: [] }
+  }
+
+  // Fetch profiles to get full_name, avatar_url
+  const ids = interpreterRows.map((i: any) => i.id)
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, full_name, avatar_url, email")
+    .in("id", ids)
+
+  const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]))
+
+  const data = interpreterRows.map((i: any) => {
+    const profile = profileMap.get(i.id)
+    return {
+      ...i,
+      full_name: profile?.full_name || "Unknown",
+      avatar_url: profile?.avatar_url,
+      email: profile?.email,
+    }
+  }).sort((a: any, b: any) => (a.full_name || '').localeCompare(b.full_name || ''))
+
+  return { data }
+}
+
+export async function getInterpreterAvailability(date: string, interpreterIds: string[]) {
+  try {
+    await ensureAdmin()
+  } catch (e) {
+    return { error: "Unauthorized", data: null }
+  }
+  if (interpreterIds.length === 0) return { data: [] }
+  
+  const supabase = createAdminClient()
+
+  const { data, error } = await supabase
+    .from("availability")
+    .select("interpreter_id, date, start_time, end_time, is_booked")
+    .eq("date", date)
+    .eq("is_booked", false)
+    .in("interpreter_id", interpreterIds)
+
+  if (error) {
+    console.error("Error fetching availability:", error)
+    return { error: error.message, data: null }
+  }
+
+  return { data }
+}
+
+export async function assignInterpreterToRequest(requestId: string, interpreterId: string) {
+  try {
+    await ensureAdmin()
+  } catch (e) {
+    return { error: "Unauthorized" }
+  }
+  const supabase = createAdminClient()
+
+  try {
+    // Fetch the request details
+    const { data: request, error: reqError } = await supabase
+      .from("interpreter_requests")
+      .select(`
+        *,
+        client:profiles!interpreter_requests_client_id_fkey(id, full_name, email)
+      `)
+      .eq("id", requestId)
+      .single()
+
+    if (reqError || !request) {
+      return { error: "Request not found" }
+    }
+
+    if (request.status !== 'pending' && request.status !== 'declined') {
+      return { error: "Request is not in a state that can be assigned" }
+    }
+
+    // Fetch interpreter details
+    const { data: interpreter, error: intError } = await supabase
+      .from("interpreters")
+      .select("id, full_name, hourly_rate")
+      .eq("id", interpreterId)
+      .single()
+
+    if (intError || !interpreter) {
+      return { error: "Interpreter not found" }
+    }
+
+    // Fetch interpreter's email from auth
+    const { data: interpreterAuth } = await supabase.auth.admin.getUserById(interpreterId)
+
+    // Calculate price from interpreter rate x duration
+    const startTime = new Date(request.start_time)
+    const endTime = new Date(request.end_time)
+    const durationHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60)
+    const calculatedPrice = durationHours * (interpreter.hourly_rate || 0)
+
+    // Create a booking
+    const { data: booking, error: bookingError } = await supabase
+      .from("bookings")
+      .insert({
+        client_id: request.client_id,
+        interpreter_id: interpreterId,
+        title: request.title,
+        platform: request.platform,
+        start_time: request.start_time,
+        end_time: request.end_time,
+        timezone: request.timezone,
+        languages: request.languages,
+        subject_matter: request.subject_matter,
+        price: calculatedPrice,
+        currency: request.currency || 'TND',
+        description: request.description,
+        meeting_link: request.meeting_link,
+        preparation_materials_url: request.preparation_materials_url,
+        status: 'pending',
+        interpreter_request_id: requestId,
+      })
+      .select("id")
+      .single()
+
+    if (bookingError || !booking) {
+      console.error("Error creating booking from request:", bookingError)
+      return { error: bookingError?.message || "Failed to create booking" }
+    }
+
+    // Update the request with assignment info
+    const { error: updateError } = await supabase
+      .from("interpreter_requests")
+      .update({
+        assigned_interpreter_id: interpreterId,
+        booking_id: booking.id,
+        status: 'assigned',
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", requestId)
+
+    if (updateError) {
+      console.error("Error updating request:", updateError)
+      return { error: updateError.message }
+    }
+
+    // Send email to interpreter about the new mission
+    if (interpreterAuth?.user?.email) {
+      await sendEmail(
+        interpreterAuth.user.email,
+        "New Mission Assignment - Tutlayt",
+        `You have been assigned a new interpretation mission: "${request.title}". Please log in to review and accept or decline.`,
+        `
+        <div style="font-family: sans-serif; padding: 20px; color: #333;">
+          <h2 style="color: #008080;">New Mission Assignment</h2>
+          <p>Hello ${interpreter.full_name},</p>
+          <p>You have been assigned a new interpretation mission by the Tutlayt team.</p>
+          <div style="background: #f0f9ff; border-left: 4px solid #008080; padding: 15px; margin: 20px 0;">
+            <strong>Mission:</strong> ${request.title}<br/>
+            <strong>Languages:</strong> ${request.languages || 'N/A'}<br/>
+            <strong>Date:</strong> ${new Date(request.start_time).toLocaleDateString()}<br/>
+            <strong>Platform:</strong> ${request.platform || 'N/A'}<br/>
+            <strong>Price:</strong> ${calculatedPrice.toFixed(2)} ${request.currency || 'TND'}
+          </div>
+          <p>Please log in to your dashboard to review and accept or decline this mission.</p>
+          <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/interpreter/missions" style="background-color: #008080; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">View Mission</a>
+        </div>
+        `
+      )
+    }
+
+    // Send email to client about assignment
+    const clientProfile = request.client as any
+    if (clientProfile?.email) {
+      await sendEmail(
+        clientProfile.email,
+        "Interpreter Assigned to Your Request - Tutlayt",
+        `An interpreter has been assigned to your request "${request.title}". The interpreter will review and confirm shortly.`,
+        `
+        <div style="font-family: sans-serif; padding: 20px; color: #333;">
+          <h2 style="color: #008080;">Interpreter Assigned</h2>
+          <p>Hello ${clientProfile.full_name},</p>
+          <p>Great news! An interpreter has been assigned to your request.</p>
+          <div style="background: #f0f9ff; border-left: 4px solid #008080; padding: 15px; margin: 20px 0;">
+            <strong>Request:</strong> ${request.title}<br/>
+            <strong>Interpreter:</strong> ${interpreter.full_name}<br/>
+            <strong>Price:</strong> ${calculatedPrice.toFixed(2)} ${request.currency || 'TND'}<br/>
+            <strong>Your Budget:</strong> ${request.budget} ${request.currency || 'TND'}
+          </div>
+          <p>The interpreter will review the mission and confirm shortly. You'll be notified once they respond.</p>
+          <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/client/requests" style="background-color: #008080; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">View Your Requests</a>
+        </div>
+        `
+      )
+    }
+
+    revalidatePath("/admin/requests")
+    revalidatePath("/dashboard/client/requests")
+    revalidatePath("/dashboard/interpreter/missions")
+    return { success: true }
+  } catch (error: any) {
+    console.error("Error assigning interpreter:", error)
+    return { error: error.message }
+  }
+}
+
+export async function reassignInterpreterToRequest(requestId: string, newInterpreterId: string) {
+  try {
+    await ensureAdmin()
+  } catch (e) {
+    return { error: "Unauthorized" }
+  }
+  const supabase = createAdminClient()
+
+  try {
+    // Fetch the request
+    const { data: request, error: reqError } = await supabase
+      .from("interpreter_requests")
+      .select("booking_id, status")
+      .eq("id", requestId)
+      .single()
+
+    if (reqError || !request) {
+      return { error: "Request not found" }
+    }
+
+    // Cancel the old booking if it exists
+    if (request.booking_id) {
+      await supabase
+        .from("bookings")
+        .update({ status: 'cancelled' })
+        .eq("id", request.booking_id)
+    }
+
+    // Reset the request to pending so assignInterpreterToRequest can process it
+    await supabase
+      .from("interpreter_requests")
+      .update({
+        status: 'pending',
+        assigned_interpreter_id: null,
+        booking_id: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", requestId)
+
+    // Now assign the new interpreter
+    return await assignInterpreterToRequest(requestId, newInterpreterId)
+  } catch (error: any) {
+    console.error("Error reassigning interpreter:", error)
+    return { error: error.message }
+  }
+}
+
+export async function addAdminNoteToRequest(requestId: string, note: string) {
+  try {
+    await ensureAdmin()
+  } catch (e) {
+    return { error: "Unauthorized" }
+  }
+  const supabase = createAdminClient()
+
+  const { error } = await supabase
+    .from("interpreter_requests")
+    .update({ admin_notes: note, updated_at: new Date().toISOString() })
+    .eq("id", requestId)
+
+  if (error) {
+    console.error("Error adding admin note:", error)
+    return { error: error.message }
+  }
+
+  revalidatePath("/admin/requests")
+  return { success: true }
+}
