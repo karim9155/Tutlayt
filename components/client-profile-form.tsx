@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -8,8 +9,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { updateCompanyProfile } from "@/app/dashboard/client/profile/actions"
-import { toast } from "sonner"
-import { Loader2, Building2, CreditCard } from "lucide-react"
+import { Loader2, Building2, CreditCard, CheckCircle2, XCircle } from "lucide-react"
 
 interface ClientProfileFormProps {
   profile: any
@@ -17,8 +17,11 @@ interface ClientProfileFormProps {
 }
 
 export function ClientProfileForm({ profile, company }: ClientProfileFormProps) {
+  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState("organization")
+  const [successMsg, setSuccessMsg] = useState<string | null>(null)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   const tabs = ["organization", "billing"]
   const currentIndex = tabs.indexOf(activeTab)
@@ -40,16 +43,23 @@ export function ClientProfileForm({ profile, company }: ClientProfileFormProps) 
     setIsLoading(true)
 
     const formData = new FormData(event.currentTarget)
+    console.log("Form data being sent:", Object.fromEntries(formData))
     
+    setSuccessMsg(null)
+    setErrorMsg(null)
     try {
       const result = await updateCompanyProfile(formData)
       if (result?.error) {
-        toast.error(result.error)
+        setErrorMsg(result.error)
       } else {
-        toast.success("Profile updated successfully")
+        setSuccessMsg("Profile saved successfully!")
+        setTimeout(() => {
+          setSuccessMsg(null)
+          router.refresh()
+        }, 3000)
       }
     } catch (error) {
-      toast.error("Something went wrong")
+      setErrorMsg("Something went wrong. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -176,6 +186,20 @@ export function ClientProfileForm({ profile, company }: ClientProfileFormProps) 
                 </div>
               </div>
             </div>
+
+            {/* Feedback Messages */}
+            {successMsg && (
+              <div className="flex items-center gap-3 mt-6 p-4 rounded-lg bg-green-50 border border-green-200 text-green-800">
+                <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+                <span className="font-medium">{successMsg}</span>
+              </div>
+            )}
+            {errorMsg && (
+              <div className="flex items-center gap-3 mt-6 p-4 rounded-lg bg-red-50 border border-red-200 text-red-800">
+                <XCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
+                <span className="font-medium">{errorMsg}</span>
+              </div>
+            )}
 
             {/* Navigation Buttons */}
             <div className="flex justify-between pt-6 mt-6 border-t border-gray-100">
