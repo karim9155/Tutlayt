@@ -195,6 +195,9 @@ export default function LandingPage() {
               <p className="text-lg text-[var(--medium-blue)] max-w-2xl mx-auto font-light">
                 We partner with key institutions to extend our reach and deliver premium language services across international markets.
               </p>
+              <p className="text-base text-[var(--medium-blue)] max-w-2xl mx-auto mt-3 font-light">
+                We are member of the international services.
+              </p>
             </div>
 
             <div className="flex justify-center">
