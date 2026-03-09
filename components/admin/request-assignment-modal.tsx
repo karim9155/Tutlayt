@@ -302,10 +302,12 @@ export function RequestAssignmentModal({ request, interpreters }: RequestAssignm
               <Calendar className="w-4 h-4 text-gray-400" />
               <span>{format(startTime, "dd MMM yyyy")} &middot; {format(startTime, "HH:mm")} - {format(endTime, "HH:mm")}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <Globe className="w-4 h-4 text-gray-400" />
-              <span>{request.languages || 'N/A'}</span>
-            </div>
+            {request.languages && (
+              <div className="flex items-center gap-2">
+                <Globe className="w-4 h-4 text-gray-400" />
+                <span>{request.languages}</span>
+              </div>
+            )}
             <div className="flex items-center gap-2">
               <DollarSign className="w-4 h-4 text-gray-400" />
               <span className="font-medium">Budget: {request.budget} {request.currency}</span>
@@ -571,7 +573,7 @@ export function RequestAssignmentModal({ request, interpreters }: RequestAssignm
                             )}
                           </div>
                           <div className="flex items-center gap-2 text-xs text-gray-500">
-                            <span>{interpreter.city || 'N/A'}</span>
+                            {interpreter.city && <span>{interpreter.city}</span>}
                             {interpreter.years_experience > 0 && (
                               <>
                                 <span className="text-gray-300">&middot;</span>

@@ -39,6 +39,9 @@ export async function Navbar() {
               <Link href="/dashboard/client/bookings" className="text-sm font-medium text-[var(--deep-navy)] hover:text-[var(--teal)] transition-colors">
                 My Bookings
               </Link>
+              <Link href="/dashboard/client/requests" className="text-sm font-medium text-[var(--deep-navy)] hover:text-[var(--teal)] transition-colors">
+                My Requests
+              </Link>
               <Link href="/dashboard/client/payments" className="text-sm font-medium text-[var(--deep-navy)] hover:text-[var(--teal)] transition-colors">
                 Payments
               </Link>

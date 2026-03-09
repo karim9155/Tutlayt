@@ -26,6 +26,7 @@ export async function signup(formData: FormData) {
   const email = formData.get("email") as string
   const password = formData.get("password") as string
   const fullName = formData.get("fullName") as string
+  const phone = formData.get("phone") as string
   const role = formData.get("role") as "interpreter" | "company"
 
   const supabase = await createClient()
@@ -36,9 +37,10 @@ export async function signup(formData: FormData) {
     options: {
       emailRedirectTo: `${origin}/auth/callback`,
       data: {
-        full_name: fullName,
+        full_name: fullName,   // read by the DB trigger to set profiles.full_name
+        company_name: fullName, // read by the DB trigger to set companies.company_name
         role: role,
-        company_name: role === 'company' ? fullName : undefined,
+        phone: phone,
       },
     },
   })

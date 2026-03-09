@@ -39,6 +39,10 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
                     <Input id="email-interpreter" name="email" type="email" placeholder="m@example.com" required className="bg-white border-gray-200 focus:border-[var(--teal)] focus:ring-[var(--teal)]" />
                   </div>
                   <div className="space-y-2">
+                    <Label htmlFor="phone-interpreter" className="text-[var(--deep-navy)]">Phone Number</Label>
+                    <Input id="phone-interpreter" name="phone" type="tel" placeholder="+216 XX XXX XXX" required className="bg-white border-gray-200 focus:border-[var(--teal)] focus:ring-[var(--teal)]" />
+                  </div>
+                  <div className="space-y-2">
                     <Label htmlFor="password-interpreter" className="text-[var(--deep-navy)]">Password</Label>
                     <Input id="password-interpreter" name="password" type="password" required className="bg-white border-gray-200 focus:border-[var(--teal)] focus:ring-[var(--teal)]" />
                   </div>
@@ -60,6 +64,10 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
                   <div className="space-y-2">
                     <Label htmlFor="email-company" className="text-[var(--deep-navy)]">Email</Label>
                     <Input id="email-company" name="email" type="email" placeholder="client@example.com" required className="bg-white border-gray-200 focus:border-[var(--teal)] focus:ring-[var(--teal)]" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone-company" className="text-[var(--deep-navy)]">Phone Number</Label>
+                    <Input id="phone-company" name="phone" type="tel" placeholder="+216 XX XXX XXX" required className="bg-white border-gray-200 focus:border-[var(--teal)] focus:ring-[var(--teal)]" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="password-company" className="text-[var(--deep-navy)]">Password</Label>

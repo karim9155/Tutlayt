@@ -75,12 +75,12 @@ export function MissionCard({ mission, viewMode = 'interpreter' }: MissionCardPr
           <div className="flex items-center gap-4">
             <Avatar className="h-12 w-12 border-2 border-white shadow-sm">
               <AvatarImage src={mission.profiles?.avatar_url} />
-              <AvatarFallback>{mission.profiles?.full_name?.[0]}</AvatarFallback>
+              <AvatarFallback>{mission.profiles?.company_name?.[0]}</AvatarFallback>
             </Avatar>
             <div>
               <CardTitle className="text-xl text-[var(--deep-navy)]">{mission.title}</CardTitle>
               <p className="text-sm text-[var(--medium-blue)]">
-                {viewMode === 'interpreter' ? 'Client' : 'Interpreter'}: {mission.profiles?.full_name}
+                {viewMode === 'interpreter' ? 'Client' : 'Interpreter'}: {mission.profiles?.company_name}
               </p>
             </div>
           </div>
@@ -214,7 +214,7 @@ export function MissionCard({ mission, viewMode = 'interpreter' }: MissionCardPr
           <ReviewDialog 
             bookingId={mission.id}
             revieweeId={viewMode === 'interpreter' ? mission.client_id : mission.interpreter_id}
-            revieweeName={mission.profiles?.full_name}
+            revieweeName={mission.profiles?.company_name}
             onReviewSubmitted={() => setHasReviewed(true)}
           />
         </CardFooter>

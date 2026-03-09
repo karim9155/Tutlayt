@@ -9,7 +9,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { updateCompanyProfile } from "@/app/dashboard/client/profile/actions"
-import { Loader2, Building2, CreditCard, CheckCircle2, XCircle } from "lucide-react"
+import { Loader2, Building2, CreditCard, CheckCircle2, XCircle, UserCircle } from "lucide-react"
 
 interface ClientProfileFormProps {
   profile: any
@@ -19,11 +19,11 @@ interface ClientProfileFormProps {
 export function ClientProfileForm({ profile, company }: ClientProfileFormProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
-  const [activeTab, setActiveTab] = useState("organization")
+  const [activeTab, setActiveTab] = useState("personal")
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
-  const tabs = ["organization", "billing"]
+  const tabs = ["personal", "organization", "billing"]
   const currentIndex = tabs.indexOf(activeTab)
 
   const handleNext = () => {
@@ -71,12 +71,21 @@ export function ClientProfileForm({ profile, company }: ClientProfileFormProps) 
         <div className="mb-8">
           <TabsList className="flex w-full bg-[var(--azureish-white)] p-1 h-auto">
             <TabsTrigger 
+              value="personal" 
+              className="flex-1 data-[state=active]:bg-[var(--deep-navy)] data-[state=active]:text-white py-3 rounded-md transition-all"
+            >
+              <div className="flex items-center gap-2">
+                <UserCircle className="h-4 w-4" />
+                <span>1. Personal</span>
+              </div>
+            </TabsTrigger>
+            <TabsTrigger 
               value="organization" 
               className="flex-1 data-[state=active]:bg-[var(--deep-navy)] data-[state=active]:text-white py-3 rounded-md transition-all"
             >
               <div className="flex items-center gap-2">
                 <Building2 className="h-4 w-4" />
-                <span>1. Organization</span>
+                <span>2. Organization</span>
               </div>
             </TabsTrigger>
             <TabsTrigger 
@@ -85,7 +94,7 @@ export function ClientProfileForm({ profile, company }: ClientProfileFormProps) 
             >
               <div className="flex items-center gap-2">
                 <CreditCard className="h-4 w-4" />
-                <span>2. Billing & Contact</span>
+                <span>3. Billing & Contact</span>
               </div>
             </TabsTrigger>
           </TabsList>
@@ -93,6 +102,46 @@ export function ClientProfileForm({ profile, company }: ClientProfileFormProps) 
 
         <Card className="border-none shadow-lg bg-white/80 backdrop-blur-sm">
           <CardContent className="pt-6">
+            {/* Personal Tab */}
+            <div className={activeTab === "personal" ? "block space-y-6" : "hidden"}>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="fullName" className="text-[var(--deep-navy)]">Full Name</Label>
+                  <Input
+                    id="fullName"
+                    name="fullName"
+                    placeholder="John Doe"
+                    defaultValue={profile?.company_name}
+                    required
+                    className="border-gray-200 focus:border-[var(--deep-navy)] focus:ring-[var(--deep-navy)] rounded-lg bg-[var(--azureish-white)]/50"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="text-[var(--deep-navy)]">Phone Number</Label>
+                  <Input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    placeholder="+216 XX XXX XXX"
+                    defaultValue={profile?.phone}
+                    className="border-gray-200 focus:border-[var(--deep-navy)] focus:ring-[var(--deep-navy)] rounded-lg bg-[var(--azureish-white)]/50"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="email-display" className="text-[var(--deep-navy)]">Email</Label>
+                  <Input
+                    id="email-display"
+                    value={profile?.email}
+                    disabled
+                    className="bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed rounded-lg"
+                  />
+                  <p className="text-xs text-gray-500">Contact support to change your email address.</p>
+                </div>
+              </div>
+            </div>
+
             {/* Organization Tab */}
             <div className={activeTab === "organization" ? "block space-y-6" : "hidden"}>
               <div className="space-y-4">
@@ -172,17 +221,6 @@ export function ClientProfileForm({ profile, company }: ClientProfileFormProps) 
                     className="border-gray-200 focus:border-[var(--deep-navy)] focus:ring-[var(--deep-navy)] rounded-lg bg-[var(--azureish-white)]/50"
                   />
                   <p className="text-xs text-gray-500">Required for invoicing and tax purposes.</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-[var(--deep-navy)]">Contact Email</Label>
-                  <Input 
-                    id="email" 
-                    value={profile?.email} 
-                    disabled
-                    className="bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed rounded-lg"
-                  />
-                  <p className="text-xs text-gray-500">Contact support to change your email address.</p>
                 </div>
               </div>
             </div>

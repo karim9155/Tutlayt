@@ -8,8 +8,7 @@ export async function getInterpreterReviews(interpreterId: string) {
     .select(`
       *,
       reviewer:reviewer_id (
-        full_name,
-        avatar_url
+        *
       )
     `)
     .eq("reviewee_id", interpreterId)

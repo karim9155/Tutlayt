@@ -19,7 +19,7 @@ export default async function InterpreterProfilePage({ params }: { params: Promi
     .select(`
       *,
       profiles (
-        full_name,
+        company_name,
         avatar_url
       )
     `)

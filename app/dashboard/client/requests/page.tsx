@@ -24,13 +24,21 @@ export default async function ClientRequestsPage() {
 
   const { data: requests, error } = await supabase
     .from("interpreter_requests")
-    .select(`
-      *,
-      assigned_interpreter:interpreters!interpreter_requests_assigned_interpreter_id_fkey(id, full_name),
-      suggested_interpreter:interpreters!interpreter_requests_suggested_interpreter_id_fkey(id, full_name)
-    `)
+    .select("*")
     .eq("client_id", user.id)
     .order("created_at", { ascending: false })
+
+  // Fetch interpreter names from profiles (interpreters table has no full_name column)
+  const interpreterIds = Array.from(new Set([
+    ...(requests || []).map((r: any) => r.assigned_interpreter_id).filter(Boolean),
+    ...(requests || []).map((r: any) => r.suggested_interpreter_id).filter(Boolean),
+  ]))
+  const { data: interpreterProfiles } = interpreterIds.length > 0
+    ? await supabase.from("profiles").select("id, company_name, full_name").in("id", interpreterIds)
+    : { data: [] }
+  const interpreterNameMap = new Map(
+    (interpreterProfiles || []).map((p: any) => [p.id, p.company_name || p.full_name || "Interpreter"])
+  )
 
   const statusColors: Record<string, string> = {
     pending: "bg-amber-100 text-amber-800",
@@ -42,10 +50,10 @@ export default async function ClientRequestsPage() {
 
   const statusLabels: Record<string, string> = {
     pending: "Pending — Finding interpreter",
-    assigned: "Assigned — Awaiting confirmation",
-    fulfilled: "Confirmed",
+    assigned: "Awaiting interpreter response",
+    fulfilled: "Interpreter accepted ✓",
     cancelled: "Cancelled",
-    declined: "Declined — Reassigning",
+    declined: "Interpreter declined — Being reassigned",
   }
 
   return (
@@ -95,11 +103,11 @@ export default async function ClientRequestsPage() {
                     </div>
                     <div className="flex items-center gap-3">
                       <Globe className="w-4 h-4 text-[var(--teal)]" />
-                      <span className="text-gray-600">{request.languages || 'N/A'}</span>
+                      <span className="text-gray-600">{request.languages || '—'}</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <Tag className="w-4 h-4 text-[var(--teal)]" />
-                      <span className="text-gray-600">{request.subject_matter || 'N/A'}</span>
+                      <span className="text-gray-600">{request.subject_matter || '—'}</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <DollarSign className="w-4 h-4 text-[var(--teal)]" />
@@ -108,19 +116,19 @@ export default async function ClientRequestsPage() {
                   </div>
 
                   <div className="space-y-3">
-                    {request.assigned_interpreter && (
+                    {request.assigned_interpreter_id && (
                       <div className="flex items-center gap-3">
                         <User className="w-4 h-4 text-[var(--teal)]" />
                         <span className="text-gray-600">
-                          <span className="font-medium text-[var(--deep-navy)]">Assigned:</span> {request.assigned_interpreter.full_name}
+                          <span className="font-medium text-[var(--deep-navy)]">Assigned:</span> {interpreterNameMap.get(request.assigned_interpreter_id)}
                         </span>
                       </div>
                     )}
-                    {request.suggested_interpreter && !request.assigned_interpreter && (
+                    {request.suggested_interpreter_id && !request.assigned_interpreter_id && (
                       <div className="flex items-center gap-3">
                         <User className="w-4 h-4 text-gray-400" />
                         <span className="text-gray-500">
-                          Suggested: {request.suggested_interpreter.full_name}
+                          Suggested: {interpreterNameMap.get(request.suggested_interpreter_id)}
                         </span>
                       </div>
                     )}

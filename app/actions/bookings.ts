@@ -98,10 +98,10 @@ export async function updateBookingStatus(bookingId: string, status: 'accepted' 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: "Not authenticated" }
 
-  // Fetch booking details before updating
+  // Fetch booking details before updating (select * avoids errors if interpreter_request_id column doesn't exist yet)
   const { data: booking } = await supabase
     .from("bookings")
-    .select("price, currency, client_id, status, interpreter_request_id")
+    .select("*")
     .eq("id", bookingId)
     .single()
 
@@ -128,16 +128,25 @@ export async function updateBookingStatus(bookingId: string, status: 'accepted' 
     return { error: error.message }
   }
 
-  // If this booking is linked to an interpreter request, update the request status
-  if (booking?.interpreter_request_id) {
+  // If this booking is linked to an interpreter request, update the request status.
+  // Try booking.interpreter_request_id first; fall back to looking up by booking_id.
+  let linkedRequestId = booking?.interpreter_request_id ?? null
+  if (!linkedRequestId) {
+    const { data: linked } = await supabase
+      .from("interpreter_requests")
+      .select("id")
+      .eq("booking_id", bookingId)
+      .maybeSingle()
+    linkedRequestId = linked?.id ?? null
+  }
+
+  if (linkedRequestId) {
     if (status === 'accepted') {
-      // Mark the request as fulfilled
       await supabase
         .from("interpreter_requests")
         .update({ status: 'fulfilled', updated_at: new Date().toISOString() })
-        .eq("id", booking.interpreter_request_id)
+        .eq("id", linkedRequestId)
     } else if (status === 'declined') {
-      // Reset the request back to pending so admin can reassign
       await supabase
         .from("interpreter_requests")
         .update({
@@ -146,7 +155,7 @@ export async function updateBookingStatus(bookingId: string, status: 'accepted' 
           booking_id: null,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", booking.interpreter_request_id)
+        .eq("id", linkedRequestId)
     }
   }
 

@@ -4,10 +4,14 @@ import { Badge } from "@/components/ui/badge"
 import { format } from "date-fns"
 import { Calendar, Globe, DollarSign, Tag, User, Clock, UserSearch } from "lucide-react"
 import { RequestAssignmentModal } from "@/components/admin/request-assignment-modal"
+import Link from "next/link"
 
-export default async function AdminRequestsPage() {
+export default async function AdminRequestsPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
   const { data: requests, error } = await getInterpreterRequests()
   const { data: interpreters } = await getVerifiedInterpreters()
+
+  const { status: statusParam } = await searchParams
+  const activeFilter = statusParam || null
 
   const statusColors: Record<string, string> = {
     pending: "bg-amber-100 text-amber-800",
@@ -19,11 +23,15 @@ export default async function AdminRequestsPage() {
 
   const statusLabels: Record<string, string> = {
     pending: "Pending",
-    assigned: "Assigned",
-    fulfilled: "Fulfilled",
+    assigned: "Waiting for Interpreter",
+    fulfilled: "Accepted",
     cancelled: "Cancelled",
-    declined: "Declined",
+    declined: "Declined by Interpreter",
   }
+
+  const filteredRequests = activeFilter
+    ? (requests || []).filter((r: any) => r.status === activeFilter)
+    : (requests || [])
 
   return (
     <div className="space-y-6">
@@ -32,19 +40,29 @@ export default async function AdminRequestsPage() {
         <p className="text-gray-500 mt-1">Manage client requests for interpreter assignments.</p>
       </div>
 
-      {/* Stats */}
+      {/* Stats / Filter buttons */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {(['pending', 'assigned', 'fulfilled', 'declined'] as const).map(status => {
           const count = requests?.filter((r: any) => r.status === status).length || 0
+          const isActive = activeFilter === status
           return (
-            <Card key={status} className="border-gray-200">
-              <CardContent className="pt-4 pb-4 px-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-500 capitalize">{status}</span>
-                  <Badge className={`${statusColors[status]} border-none`}>{count}</Badge>
-                </div>
-              </CardContent>
-            </Card>
+            <Link
+              key={status}
+              href={isActive ? '/admin/requests' : `/admin/requests?status=${status}`}
+              className="block"
+            >
+              <Card className={`border-2 transition-all hover:shadow-md cursor-pointer ${isActive ? 'border-gray-400 shadow-md bg-gray-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                <CardContent className="pt-4 pb-4 px-4">
+                  <div className="flex items-center justify-between">
+                    <span className={`text-sm font-medium ${isActive ? 'text-gray-900' : 'text-gray-500'}`}>{statusLabels[status]}</span>
+                    <Badge className={`${statusColors[status]} border-none`}>{count}</Badge>
+                  </div>
+                  {isActive && (
+                    <p className="text-xs text-gray-400 mt-1">Click to clear filter</p>
+                  )}
+                </CardContent>
+              </Card>
+            </Link>
           )
         })}
       </div>
@@ -62,8 +80,9 @@ export default async function AdminRequestsPage() {
       )}
 
       {requests && requests.length > 0 ? (
+        filteredRequests.length > 0 ? (
         <div className="grid gap-4">
-          {requests.map((request: any) => {
+          {filteredRequests.map((request: any) => {
             const clientProfile = request.client as any
             return (
               <Card key={request.id} className="border-gray-200 hover:shadow-md transition-shadow">
@@ -79,7 +98,7 @@ export default async function AdminRequestsPage() {
                     <div>
                       <CardTitle className="text-lg">{request.title}</CardTitle>
                       <p className="text-sm text-gray-500 mt-1">
-                        <span className="font-medium text-gray-700">{clientProfile?.full_name || 'Unknown Client'}</span>
+                        <span className="font-medium text-gray-700">{clientProfile?.company_name || 'Unknown Client'}</span>
                         {clientProfile?.email && <span className="ml-2 text-gray-400">({clientProfile.email})</span>}
                         <span className="mx-2">&middot;</span>
                         {format(new Date(request.created_at), "dd MMM yyyy, HH:mm")}
@@ -104,7 +123,7 @@ export default async function AdminRequestsPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <Globe className="w-4 h-4 text-gray-400" />
-                      <span className="text-gray-600">{request.languages || 'N/A'}</span>
+                      <span className="text-gray-600">{request.languages || '—'}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <DollarSign className="w-4 h-4 text-gray-400" />
@@ -177,6 +196,15 @@ export default async function AdminRequestsPage() {
             )
           })}
         </div>
+        ) : (
+          <div className="text-center py-12 bg-white rounded-xl border border-dashed border-gray-200">
+            <UserSearch className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+            <h3 className="text-base font-medium text-gray-900">No &quot;{statusLabels[activeFilter!]}&quot; requests</h3>
+            <p className="text-gray-500 mt-1 text-sm">
+              <Link href="/admin/requests" className="text-blue-500 underline">Clear filter</Link> to see all requests.
+            </p>
+          </div>
+        )
       ) : (
         <div className="text-center py-16 bg-white rounded-xl border border-dashed border-gray-200">
           <UserSearch className="h-12 w-12 text-gray-300 mx-auto mb-3" />

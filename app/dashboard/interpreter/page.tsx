@@ -23,9 +23,12 @@ export default async function InterpreterDashboard() {
   // Verify role
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role, full_name, email, avatar_url")
+    .select("*")
     .eq("id", user.id)
     .single()
+
+  // Normalise name: handle pre/post migration 024 (full_name → company_name)
+  const profileName = (profile as any)?.company_name || (profile as any)?.full_name
 
   if (profile?.role !== "interpreter") {
     return redirect("/dashboard")
@@ -179,13 +182,13 @@ export default async function InterpreterDashboard() {
               <div className="flex items-center gap-3">
                  <div className="h-14 w-14 rounded-full bg-[var(--azureish-white)] flex items-center justify-center text-[var(--deep-navy)] font-bold text-xl border-2 border-white shadow-sm">
                     {profile?.avatar_url ? (
-                      <img src={profile.avatar_url} alt={profile.full_name || "User"} className="h-full w-full rounded-full object-cover" />
+                      <img src={profile.avatar_url} alt={profileName || "User"} className="h-full w-full rounded-full object-cover" />
                     ) : (
-                      <span>{profile?.full_name?.[0] || "U"}</span>
+                      <span>{profileName?.[0] || "U"}</span>
                     )}
                  </div>
                  <div>
-                    <h3 className="font-bold text-[var(--deep-navy)] text-lg leading-tight">{profile?.full_name || "Interpreter"}</h3>
+                    <h3 className="font-bold text-[var(--deep-navy)] text-lg leading-tight">{profileName || "Interpreter"}</h3>
                     <p className="text-sm text-gray-500">{profile?.email}</p>
                  </div>
               </div>

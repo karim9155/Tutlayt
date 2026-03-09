@@ -367,26 +367,34 @@ export async function getInterpreterRequests() {
     ...requests.map((r: any) => r.assigned_interpreter_id),
   ].filter(Boolean))]
 
-  // Batch fetch profiles and interpreters
-  const [profilesResult, interpretersResult] = await Promise.all([
+  // Batch fetch profiles and company names
+  const [profilesResult, interpretersResult, companiesResult] = await Promise.all([
     clientIds.length > 0
-      ? supabase.from("profiles").select("id, full_name, email").in("id", clientIds)
+      ? supabase.from("profiles").select("id, email").in("id", clientIds)
       : { data: [] },
     interpreterIds.length > 0
       ? supabase.from("interpreters").select("id, full_name, hourly_rate").in("id", interpreterIds)
+      : { data: [] },
+    clientIds.length > 0
+      ? supabase.from("companies").select("id, company_name").in("id", clientIds)
       : { data: [] },
   ])
 
   const profilesMap = new Map((profilesResult.data || []).map((p: any) => [p.id, p]))
   const interpretersMap = new Map((interpretersResult.data || []).map((i: any) => [i.id, i]))
+  const companiesMap = new Map((companiesResult.data || []).map((c: any) => [c.id, c]))
 
   // Attach related data to each request
-  const enrichedRequests = requests.map((r: any) => ({
-    ...r,
-    client: profilesMap.get(r.client_id) || null,
-    suggested_interpreter: interpretersMap.get(r.suggested_interpreter_id) || null,
-    assigned_interpreter: interpretersMap.get(r.assigned_interpreter_id) || null,
-  }))
+  const enrichedRequests = requests.map((r: any) => {
+    const profile = profilesMap.get(r.client_id)
+    const company = companiesMap.get(r.client_id)
+    return {
+      ...r,
+      client: profile ? { ...profile, company_name: company?.company_name || profile?.email || 'Unknown Client' } : null,
+      suggested_interpreter: interpretersMap.get(r.suggested_interpreter_id) || null,
+      assigned_interpreter: interpretersMap.get(r.assigned_interpreter_id) || null,
+    }
+  })
 
   return { data: enrichedRequests }
 }
@@ -422,20 +430,22 @@ export async function getVerifiedInterpreters() {
     return { data: [] }
   }
 
-  // Fetch profiles to get full_name, avatar_url
+  // Fetch profiles to get name, avatar_url — select * so it works regardless of schema migration state
   const ids = interpreterRows.map((i: any) => i.id)
   const { data: profiles } = await supabase
     .from("profiles")
-    .select("id, full_name, avatar_url, email")
+    .select("*")
     .in("id", ids)
 
   const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]))
 
   const data = interpreterRows.map((i: any) => {
     const profile = profileMap.get(i.id)
+    // company_name is the renamed column (migration 024); fall back to full_name if not yet migrated
+    const name = profile?.company_name || profile?.full_name || i.full_name || "Unknown"
     return {
       ...i,
-      full_name: profile?.full_name || "Unknown",
+      full_name: name,
       avatar_url: profile?.avatar_url,
       email: profile?.email,
     }
@@ -478,18 +488,27 @@ export async function assignInterpreterToRequest(requestId: string, interpreterI
   const supabase = createAdminClient()
 
   try {
-    // Fetch the request details
+    // Fetch the request details (no profile join to avoid schema issues)
     const { data: request, error: reqError } = await supabase
       .from("interpreter_requests")
-      .select(`
-        *,
-        client:profiles!interpreter_requests_client_id_fkey(id, full_name, email)
-      `)
+      .select("*")
       .eq("id", requestId)
       .single()
 
     if (reqError || !request) {
+      console.error("Error fetching request:", reqError)
       return { error: "Request not found" }
+    }
+
+    // Fetch client email & company name separately
+    const [profileRes, companyRes] = await Promise.all([
+      supabase.from("profiles").select("id, email").eq("id", request.client_id).single(),
+      supabase.from("companies").select("id, company_name").eq("id", request.client_id).single(),
+    ])
+    const clientProfile = {
+      id: request.client_id,
+      email: profileRes.data?.email,
+      company_name: companyRes.data?.company_name,
     }
 
     if (request.status !== 'pending' && request.status !== 'declined') {
@@ -499,13 +518,22 @@ export async function assignInterpreterToRequest(requestId: string, interpreterI
     // Fetch interpreter details
     const { data: interpreter, error: intError } = await supabase
       .from("interpreters")
-      .select("id, full_name, hourly_rate")
+      .select("id, hourly_rate")
       .eq("id", interpreterId)
       .single()
 
     if (intError || !interpreter) {
+      console.error("Error fetching interpreter:", intError)
       return { error: "Interpreter not found" }
     }
+
+    // Fetch interpreter name from profiles
+    const { data: interpreterProfile } = await supabase
+      .from("profiles")
+      .select("company_name, full_name")
+      .eq("id", interpreterId)
+      .single()
+    const interpreterName = interpreterProfile?.company_name || interpreterProfile?.full_name || "Interpreter"
 
     // Fetch interpreter's email from auth
     const { data: interpreterAuth } = await supabase.auth.admin.getUserById(interpreterId)
@@ -570,7 +598,7 @@ export async function assignInterpreterToRequest(requestId: string, interpreterI
         `
         <div style="font-family: sans-serif; padding: 20px; color: #333;">
           <h2 style="color: #008080;">New Mission Assignment</h2>
-          <p>Hello ${interpreter.full_name},</p>
+          <p>Hello ${interpreterName},</p>
           <p>You have been assigned a new interpretation mission by the Tutlayt team.</p>
           <div style="background: #f0f9ff; border-left: 4px solid #008080; padding: 15px; margin: 20px 0;">
             <strong>Mission:</strong> ${request.title}<br/>
@@ -587,7 +615,6 @@ export async function assignInterpreterToRequest(requestId: string, interpreterI
     }
 
     // Send email to client about assignment
-    const clientProfile = request.client as any
     if (clientProfile?.email) {
       await sendEmail(
         clientProfile.email,
@@ -596,11 +623,11 @@ export async function assignInterpreterToRequest(requestId: string, interpreterI
         `
         <div style="font-family: sans-serif; padding: 20px; color: #333;">
           <h2 style="color: #008080;">Interpreter Assigned</h2>
-          <p>Hello ${clientProfile.full_name},</p>
+          <p>Hello ${clientProfile.company_name},</p>
           <p>Great news! An interpreter has been assigned to your request.</p>
           <div style="background: #f0f9ff; border-left: 4px solid #008080; padding: 15px; margin: 20px 0;">
             <strong>Request:</strong> ${request.title}<br/>
-            <strong>Interpreter:</strong> ${interpreter.full_name}<br/>
+            <strong>Interpreter:</strong> ${interpreterName}<br/>
             <strong>Price:</strong> ${calculatedPrice.toFixed(2)} ${request.currency || 'TND'}<br/>
             <strong>Your Budget:</strong> ${request.budget} ${request.currency || 'TND'}
           </div>

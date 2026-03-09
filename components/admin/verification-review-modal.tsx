@@ -150,7 +150,11 @@ export function VerificationReviewModal({ user, isOpen, onClose, onComplete }: V
         <Dialog open={true} onOpenChange={() => setExpandedDoc(null)}>
             <DialogContent className="max-w-[90vw] h-[90vh] flex flex-col p-8 overflow-hidden bg-black/95 border-none">
                  <div className="relative w-full h-full flex items-center justify-center">
-                     <img src={expandedDoc} className="max-w-full max-h-full object-contain" alt="Expanded" />
+                     {expandedDoc.toLowerCase().includes('.pdf') ? (
+                       <iframe src={expandedDoc} className="w-full h-full border-0 rounded" title="Document" />
+                     ) : (
+                       <img src={expandedDoc} className="max-w-full max-h-full object-contain" alt="Expanded" />
+                     )}
                      <button 
                         onClick={() => setExpandedDoc(null)} 
                         className="absolute top-0 right-0 text-white hover:text-gray-300 bg-black/50 rounded-full p-2"
@@ -182,13 +186,13 @@ export function VerificationReviewModal({ user, isOpen, onClose, onComplete }: V
             <div className="bg-slate-50 p-6 rounded-lg border border-slate-100 flex flex-col items-center text-center">
                <div className="w-24 h-24 rounded-full bg-white shadow-sm flex items-center justify-center text-3xl font-bold text-slate-500 overflow-hidden mb-4 border-4 border-white ring-1 ring-slate-100">
                   {user.profiles?.avatar_url ? (
-                    <img src={user.profiles.avatar_url} className="w-full h-full object-cover" />
+                    <img src={user.profiles.avatar_url} className="w-full h-full object-cover" alt="Profile" />
                   ) : (
-                    user.profiles?.full_name?.[0] || "?"
+                    (user.profiles?.full_name || user.profiles?.first_name || user.company_name || user.full_name || "?")?.[0]
                   )}
                </div>
                
-               <h3 className="font-bold text-xl text-[var(--deep-navy)]">{user.profiles?.full_name}</h3>
+               <h3 className="font-bold text-xl text-[var(--deep-navy)]">{user.profiles?.full_name || [user.profiles?.first_name, user.profiles?.last_name].filter(Boolean).join(' ') || user.company_name || user.full_name || 'Unnamed'}</h3>
                <p className="text-sm text-slate-500 mb-2">{user.profiles?.email}</p>
                <Badge variant="outline" className="capitalize px-3 py-1">{user.role}</Badge>
             </div>
@@ -315,7 +319,7 @@ export function VerificationReviewModal({ user, isOpen, onClose, onComplete }: V
                                 </div>
                                 <div className="flex items-center justify-between text-sm group">
                                     <span className="text-slate-500">Phone</span>
-                                    <span className="font-medium select-all">{user.phone || "N/A"}</span>
+                                    <span className="font-medium select-all">{user.profiles?.phone || user.phone || "N/A"}</span>
                                 </div>
                                 {user.linkedin_profile && (
                                     <div className="flex items-center justify-between text-sm">
@@ -375,12 +379,12 @@ export function VerificationReviewModal({ user, isOpen, onClose, onComplete }: V
                             )}
                         </div>
                         
-                        {user.documents?.sworn_proof ? (
+                        {user.documentUrls?.sworn_proof || user.documents?.sworn_proof ? (
                             <Button 
                                 variant="outline" 
                                 size="sm" 
                                 className="w-full mb-3 h-8 text-xs bg-white text-blue-700 border-blue-200 hover:bg-blue-50"
-                                onClick={() => setExpandedDoc(user.documents.sworn_proof)}
+                                onClick={() => setExpandedDoc(user.documentUrls?.sworn_proof || user.documents.sworn_proof)}
                             >
                                 <Maximize2 className="w-3 h-3 mr-1.5" /> View Certificate
                             </Button>
@@ -596,32 +600,52 @@ export function VerificationReviewModal({ user, isOpen, onClose, onComplete }: V
 }
 
 function DocItem({ name, url, onExpand }: { name: string, url: any, onExpand: (url: string) => void }) {
+    const urlStr = typeof url === 'string' ? url : ''
+    const lower = urlStr.toLowerCase()
+    const isPdf = lower.includes('.pdf')
+    const isImage = lower.endsWith('.png') || lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.webp') || lower.endsWith('.gif')
+
     return (
         <div className="group">
             <div className="flex items-center gap-2 mb-2 px-1">
                     <div className="h-2 w-2 rounded-full bg-[var(--teal)]"></div>
-                    <h5 className="font-semibold text-sm uppercase tracking-wide text-slate-600">{name.replace(/-/g, ' ')}</h5>
+                    <h5 className="font-semibold text-sm uppercase tracking-wide text-slate-600">{name.replace(/_/g, ' ').replace(/-/g, ' ')}</h5>
             </div>
             
             <div className="bg-white p-1 rounded-xl border shadow-sm group-hover:shadow-md transition-all duration-200 overflow-hidden relative">
-                {typeof url === 'string' && (url.toLowerCase().endsWith('.png') || url.toLowerCase().endsWith('.jpg') || url.toLowerCase().endsWith('.jpeg') || url.toLowerCase().startsWith('http')) ? (
+                {isImage ? (
                     <div className="relative aspect-[3/2] w-full bg-slate-100 rounded-lg overflow-hidden border border-slate-100">
-                        <img src={url} alt={name} className="w-full h-full object-contain" />
-                        
+                        <img src={urlStr} alt={name} className="w-full h-full object-contain" />
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
-                            <Button variant="secondary" size="sm" onClick={() => onExpand(url)} className="shadow-lg font-medium">
+                            <Button variant="secondary" size="sm" onClick={() => onExpand(urlStr)} className="shadow-lg font-medium">
                                 <Maximize2 className="w-4 h-4 mr-2" /> Inspect Details
                             </Button>
                         </div>
                     </div>
-                ) : (
+                ) : isPdf ? (
+                    <div className="rounded-lg overflow-hidden border border-slate-100">
+                        <iframe
+                            src={urlStr}
+                            className="w-full h-[400px] border-0"
+                            title={name}
+                        />
+                        <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border-t">
+                            <span className="text-xs text-slate-500 truncate max-w-[200px]">{name}</span>
+                            <Button variant="link" size="sm" asChild className="h-auto py-0">
+                                <a href={urlStr} target="_blank" rel="noopener noreferrer">Open in new tab</a>
+                            </Button>
+                        </div>
+                    </div>
+                ) : urlStr ? (
                     <div className="flex flex-col items-center justify-center h-40 bg-slate-50 rounded-lg border border-dashed border-slate-200 group-hover:border-[var(--teal)] transition-colors">
                         <FileText className="w-10 h-10 text-slate-300 mb-2" />
                         <span className="text-sm text-slate-500 font-medium truncate max-w-[200px] mb-2">{name}</span>
                         <Button variant="link" size="sm" asChild>
-                            <a href={url} target="_blank" rel="noopener noreferrer">Download / View External</a>
+                            <a href={urlStr} target="_blank" rel="noopener noreferrer">Download / View External</a>
                         </Button>
                     </div>
+                ) : (
+                    <div className="flex items-center justify-center h-20 text-slate-400 text-sm">No file</div>
                 )}
             </div>
         </div>

@@ -19,9 +19,7 @@ export default async function ClientBookingsPage({ searchParams }: { searchParam
       *,
       interpreter:interpreter_id (
         profiles (
-          full_name,
-          email,
-          avatar_url
+          *
         )
       )
     `)
@@ -33,10 +31,19 @@ export default async function ClientBookingsPage({ searchParams }: { searchParam
   }
 
   // Map the nested structure to match what MissionCard expects (mission.profiles)
-  const allBookings = bookings?.map((booking: any) => ({
-    ...booking,
-    profiles: booking.interpreter?.profiles
-  })) || []
+  const allBookings = bookings?.map((booking: any) => {
+    const profile = booking.interpreter?.profiles
+    return {
+      ...booking,
+      profiles: profile
+        ? {
+            ...profile,
+            // Normalise name: handle pre/post migration 024 (full_name → company_name)
+            company_name: profile.company_name || profile.full_name,
+          }
+        : undefined,
+    }
+  }) || []
 
   const totalPages = Math.ceil(allBookings.length / ITEMS_PER_PAGE)
   const paginatedBookings = allBookings.slice(

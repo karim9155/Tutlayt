@@ -13,6 +13,7 @@ const clientItems = [
   { title: "Find Interpreters", url: "/dashboard/search", icon: Search },
   { title: "Rent Equipment", url: "/equipment", icon: Headphones },
   { title: "My Bookings", url: "/dashboard/client/bookings", icon: Calendar },
+  { title: "My Requests", url: "/dashboard/client/requests", icon: Briefcase },
   { title: "Payments", url: "/dashboard/client/payments", icon: CreditCard },
   { title: "Profile", url: "/dashboard/client/profile", icon: User },
 ]

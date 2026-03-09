@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -11,7 +12,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { updateProfile } from "@/app/dashboard/interpreter/profile/actions"
 import { toast } from "sonner"
-import { Loader2, CheckCircle2, Plus, Trash2 } from "lucide-react"
+import { Loader2, CheckCircle2, Plus, Trash2, Camera } from "lucide-react"
 import { TagInput } from "@/components/ui/tag-input"
 
 interface InterpreterProfileFormProps {
@@ -20,8 +21,31 @@ interface InterpreterProfileFormProps {
 }
 
 export function InterpreterProfileForm({ profile, interpreter }: InterpreterProfileFormProps) {
+  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState("basic")
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(profile?.avatar_url || null)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
+
+  // --- Array field state (bypasses hidden-input FormData capture issues) ---
+  const [motherTongues, setMotherTongues] = useState<string[]>(interpreter?.mother_tongues || [])
+  const [languagesA, setLanguagesA]       = useState<string[]>(interpreter?.languages_a || [])
+  const [languagesB, setLanguagesB]       = useState<string[]>(interpreter?.languages_b || [])
+  const [languagesC, setLanguagesC]       = useState<string[]>(interpreter?.languages_c || [])
+  const [primaryExpertise, setPrimaryExpertise]     = useState<string[]>(interpreter?.primary_expertise || [])
+  const [secondaryExpertise, setSecondaryExpertise] = useState<string[]>(interpreter?.secondary_expertise || [])
+  const [equipmentList, setEquipmentList] = useState<string[]>(interpreter?.equipment || [])
+
+  // Re-sync array state after router.refresh() delivers new interpreter props
+  useEffect(() => {
+    setMotherTongues(interpreter?.mother_tongues || [])
+    setLanguagesA(interpreter?.languages_a || [])
+    setLanguagesB(interpreter?.languages_b || [])
+    setLanguagesC(interpreter?.languages_c || [])
+    setPrimaryExpertise(interpreter?.primary_expertise || [])
+    setSecondaryExpertise(interpreter?.secondary_expertise || [])
+    setEquipmentList(interpreter?.equipment || [])
+  }, [interpreter])
   
   // Initialize from history array, or fallback to legacy single fields if history is empty
   const [educationHistory, setEducationHistory] = useState<any[]>(
@@ -71,6 +95,17 @@ export function InterpreterProfileForm({ profile, interpreter }: InterpreterProf
     setIsLoading(true)
 
     const formData = new FormData(event.currentTarget)
+
+    // Explicitly inject array fields from component state.
+    // This is necessary because hidden inputs inside tab panels may not be
+    // reliably captured by FormData across all browsers and React versions.
+    formData.set("motherTongues", motherTongues.join(","))
+    formData.set("languagesA", languagesA.join(","))
+    formData.set("languagesB", languagesB.join(","))
+    formData.set("languagesC", languagesC.join(","))
+    formData.set("primaryExpertise", primaryExpertise.join(","))
+    formData.set("secondaryExpertise", secondaryExpertise.join(","))
+    formData.set("equipment", equipmentList.join(","))
     
     try {
       const result = await updateProfile(formData)
@@ -78,6 +113,7 @@ export function InterpreterProfileForm({ profile, interpreter }: InterpreterProf
         toast.error(result.error)
       } else {
         toast.success("Profile updated successfully")
+        router.refresh() // Re-fetches server data so TagInputs pre-fill with saved values
       }
     } catch (error) {
       toast.error("Something went wrong")
@@ -128,13 +164,58 @@ export function InterpreterProfileForm({ profile, interpreter }: InterpreterProf
           <CardContent className="pt-6">
             {/* Basic Info Tab */}
             <div className={activeTab === "basic" ? "block space-y-6" : "hidden"}>
+
+              {/* Avatar Upload */}
+              <div className="flex items-center gap-6 pb-4 border-b border-gray-100">
+                <div className="relative group">
+                  <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-md bg-gray-100 flex items-center justify-center">
+                    {avatarPreview ? (
+                      <img src={avatarPreview} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-3xl font-bold text-gray-400">
+                        {(profile?.first_name || profile?.full_name || "?")[0]?.toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => avatarInputRef.current?.click()}
+                    className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Camera className="w-6 h-6 text-white" />
+                  </button>
+                </div>
+                <div>
+                  <p className="font-medium text-[var(--deep-navy)]">Profile Photo</p>
+                  <p className="text-sm text-gray-500 mb-2">JPG, PNG or WebP. Max 2MB.</p>
+                  <button
+                    type="button"
+                    onClick={() => avatarInputRef.current?.click()}
+                    className="text-sm text-[var(--teal)] underline underline-offset-2 hover:text-[var(--teal-blue)]"
+                  >
+                    Change photo
+                  </button>
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    name="avatarFile"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) setAvatarPreview(URL.createObjectURL(file))
+                    }}
+                  />
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="firstName" className="text-[var(--deep-navy)]">First Name</Label>
                   <Input 
                     id="firstName" 
                     name="firstName" 
-                    defaultValue={profile?.first_name || profile?.full_name?.split(' ')[0]} 
+                    defaultValue={profile?.first_name || (profile?.full_name || profile?.company_name)?.split(' ')[0]} 
                     className="border-gray-200 focus:border-[var(--teal)] focus:ring-[var(--teal)] rounded-lg bg-[var(--azureish-white)]/50"
                   />
                 </div>
@@ -143,7 +224,18 @@ export function InterpreterProfileForm({ profile, interpreter }: InterpreterProf
                   <Input 
                     id="lastName" 
                     name="lastName" 
-                    defaultValue={profile?.last_name || profile?.full_name?.split(' ').slice(1).join(' ')} 
+                    defaultValue={profile?.last_name || (profile?.full_name || profile?.company_name)?.split(' ').slice(1).join(' ')} 
+                    className="border-gray-200 focus:border-[var(--teal)] focus:ring-[var(--teal)] rounded-lg bg-[var(--azureish-white)]/50"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="text-[var(--deep-navy)]">Phone Number</Label>
+                  <Input 
+                    id="phone" 
+                    name="phone" 
+                    type="tel"
+                    placeholder="+216 XX XXX XXX"
+                    defaultValue={profile?.phone || interpreter?.phone} 
                     className="border-gray-200 focus:border-[var(--teal)] focus:ring-[var(--teal)] rounded-lg bg-[var(--azureish-white)]/50"
                   />
                 </div>
@@ -160,10 +252,12 @@ export function InterpreterProfileForm({ profile, interpreter }: InterpreterProf
                 <div className="space-y-2">
                   <Label htmlFor="motherTongues" className="text-[var(--deep-navy)]">Mother Tongue(s)</Label>
                   <TagInput 
+                    key={`mt-${(interpreter?.mother_tongues || []).join(",")}`}
                     id="motherTongues" 
                     name="motherTongues" 
                     placeholder="e.g. Arabic, French (Press Enter)"
-                    defaultTags={interpreter?.mother_tongues || []} 
+                    defaultTags={motherTongues}
+                    onTagsChange={setMotherTongues}
                     className="border-gray-200 focus-within:border-[var(--teal)] focus-within:ring-[var(--teal)] rounded-lg bg-[var(--azureish-white)]/50"
                   />
                 </div>
@@ -178,30 +272,36 @@ export function InterpreterProfileForm({ profile, interpreter }: InterpreterProf
                   <div className="space-y-2">
                     <Label htmlFor="languagesA" className="text-[var(--deep-navy)]">Language A (Native/Active)</Label>
                     <TagInput 
+                      key={`la-${(interpreter?.languages_a || []).join(",")}`}
                       id="languagesA" 
                       name="languagesA" 
                       placeholder="e.g. Arabic (Press Enter)"
-                      defaultTags={interpreter?.languages_a || []} 
+                      defaultTags={languagesA}
+                      onTagsChange={setLanguagesA}
                       className="border-gray-200 focus-within:border-[var(--teal)] focus-within:ring-[var(--teal)] rounded-lg bg-[var(--azureish-white)]/50"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="languagesB" className="text-[var(--deep-navy)]">Language B (Active)</Label>
                     <TagInput 
+                      key={`lb-${(interpreter?.languages_b || []).join(",")}`}
                       id="languagesB" 
                       name="languagesB" 
                       placeholder="e.g. English, French (Press Enter)"
-                      defaultTags={interpreter?.languages_b || []} 
+                      defaultTags={languagesB}
+                      onTagsChange={setLanguagesB}
                       className="border-gray-200 focus-within:border-[var(--teal)] focus-within:ring-[var(--teal)] rounded-lg bg-[var(--azureish-white)]/50"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="languagesC" className="text-[var(--deep-navy)]">Language C (Passive)</Label>
                     <TagInput 
+                      key={`lc-${(interpreter?.languages_c || []).join(",")}`}
                       id="languagesC" 
                       name="languagesC" 
                       placeholder="e.g. Spanish, German (Press Enter)"
-                      defaultTags={interpreter?.languages_c || []} 
+                      defaultTags={languagesC}
+                      onTagsChange={setLanguagesC}
                       className="border-gray-200 focus-within:border-[var(--teal)] focus-within:ring-[var(--teal)] rounded-lg bg-[var(--azureish-white)]/50"
                     />
                   </div>
@@ -358,10 +458,12 @@ export function InterpreterProfileForm({ profile, interpreter }: InterpreterProf
                 <div className="space-y-2">
                   <Label htmlFor="primaryExpertise" className="text-[var(--deep-navy)]">Primary Subject Matter Expertise</Label>
                   <TagInput 
+                    key={`pe-${(interpreter?.primary_expertise || []).join(",")}`}
                     id="primaryExpertise" 
                     name="primaryExpertise" 
                     placeholder="e.g. Legal, Medical, Finance (Press Enter)"
-                    defaultTags={interpreter?.primary_expertise || []} 
+                    defaultTags={primaryExpertise}
+                    onTagsChange={setPrimaryExpertise}
                     className="border-gray-200 focus-within:border-[var(--teal)] focus-within:ring-[var(--teal)] rounded-lg bg-[var(--azureish-white)]/50"
                   />
                 </div>
@@ -369,10 +471,12 @@ export function InterpreterProfileForm({ profile, interpreter }: InterpreterProf
                 <div className="space-y-2">
                   <Label htmlFor="secondaryExpertise" className="text-[var(--deep-navy)]">Secondary Subject Matter Expertise</Label>
                   <TagInput 
+                    key={`se-${(interpreter?.secondary_expertise || []).join(",")}`}
                     id="secondaryExpertise" 
                     name="secondaryExpertise" 
                     placeholder="e.g. Engineering, Marketing (Press Enter)"
-                    defaultTags={interpreter?.secondary_expertise || []} 
+                    defaultTags={secondaryExpertise}
+                    onTagsChange={setSecondaryExpertise}
                     className="border-gray-200 focus-within:border-[var(--teal)] focus-within:ring-[var(--teal)] rounded-lg bg-[var(--azureish-white)]/50"
                   />
                 </div>
@@ -380,10 +484,12 @@ export function InterpreterProfileForm({ profile, interpreter }: InterpreterProf
                 <div className="space-y-2">
                   <Label htmlFor="equipment" className="text-[var(--deep-navy)]">Equipment (e.g. Booth, Headsets)</Label>
                   <TagInput 
+                    key={`eq-${(interpreter?.equipment || []).join(",")}`}
                     id="equipment" 
                     name="equipment" 
                     placeholder="e.g. Interpreting Console (Press Enter)"
-                    defaultTags={interpreter?.equipment || []} 
+                    defaultTags={equipmentList}
+                    onTagsChange={setEquipmentList}
                     className="border-gray-200 focus-within:border-[var(--teal)] focus-within:ring-[var(--teal)] rounded-lg bg-[var(--azureish-white)]/50"
                   />
                 </div>
@@ -589,13 +695,14 @@ export function InterpreterProfileForm({ profile, interpreter }: InterpreterProf
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="phone" className="text-[var(--deep-navy)]">Phone</Label>
+                    <Label htmlFor="phone-contact" className="text-[var(--deep-navy)]">Phone</Label>
                     <Input 
-                      id="phone" 
-                      name="phone" 
-                      defaultValue={interpreter?.phone} 
-                      className="border-gray-200 focus:border-[var(--teal)] focus:ring-[var(--teal)] rounded-lg bg-[var(--azureish-white)]/50"
+                      id="phone-contact"
+                      disabled
+                      value={profile?.phone || interpreter?.phone || ""}
+                      className="bg-gray-100 border-gray-200 rounded-lg"
                     />
+                    <p className="text-xs text-gray-400">Edit phone number on the Basic tab.</p>
                   </div>
                 </div>
 

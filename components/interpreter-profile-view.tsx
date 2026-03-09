@@ -32,7 +32,7 @@ export function InterpreterProfileView({ interpreter, reviews = [], stats = { av
               <Avatar className="w-32 h-32 border-4 border-white shadow-lg bg-white">
                 <AvatarImage src={interpreter.profiles?.avatar_url} className="object-cover" />
                 <AvatarFallback className="text-4xl bg-[var(--azureish-white)] text-[var(--deep-navy)] font-bold">
-                  {interpreter.profiles?.full_name?.[0]}
+                  {interpreter.profiles?.company_name?.[0]}
                 </AvatarFallback>
               </Avatar>
               
@@ -40,7 +40,7 @@ export function InterpreterProfileView({ interpreter, reviews = [], stats = { av
                 <div className="flex flex-col md:flex-row justify-between items-start gap-4">
                   <div>
                     <h1 className="text-3xl font-bold text-[var(--deep-navy)] flex items-center gap-2">
-                      {interpreter.profiles?.full_name}
+                      {interpreter.profiles?.company_name}
                       {interpreter.verified && (
                         <span className="text-sm bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium flex items-center gap-1 shadow-sm">
                           <ShieldCheck className="w-4 h-4" /> Verified
@@ -215,12 +215,12 @@ export function InterpreterProfileView({ interpreter, reviews = [], stats = { av
                           <Avatar className="h-10 w-10 border border-gray-100">
                             <AvatarImage src={review.reviewer?.avatar_url} />
                             <AvatarFallback className="bg-[var(--azureish-white)] text-[var(--deep-navy)]">
-                              {review.reviewer?.full_name?.[0] || "C"}
+                              {(review.reviewer?.company_name || review.reviewer?.full_name)?.[0] || "C"}
                             </AvatarFallback>
                           </Avatar>
                           <div>
                             <p className="font-semibold text-[var(--deep-navy)]">
-                              {review.reviewer?.full_name || "Client"}
+                              {review.reviewer?.company_name || review.reviewer?.full_name || "Client"}
                             </p>
                             <p className="text-xs text-gray-500">
                               {format(new Date(review.created_at), "MMMM d, yyyy")}
@@ -281,7 +281,7 @@ export function InterpreterProfileView({ interpreter, reviews = [], stats = { av
 
             <BookingDialog 
               interpreterId={interpreter.id} 
-              interpreterName={interpreter.profiles?.full_name} 
+              interpreterName={interpreter.profiles?.company_name} 
               hourlyRate={(clientType === 'international') ? (interpreter.daily_rate_international || 0) : (interpreter.daily_rate || 0)}
               currency={(clientType === 'international') ? (interpreter.currency_international || 'USD') : 'TND'}
               clientType={clientType || 'local'}

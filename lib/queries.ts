@@ -6,8 +6,7 @@ export async function getInterpreters(supabase: SupabaseClient, filters: { city?
     .select(`
       *,
       profiles (
-        full_name,
-        avatar_url,
+        *,
         reviews:reviews!reviews_reviewee_id_fkey (
           rating
         )

@@ -38,35 +38,42 @@ export default async function AdminPage({
   const params = await searchParams
   const supabase = createAdminClient()
   
-  // 1. Fetch Companies (Clients)
+  // 1. Fetch Companies (Clients) - avoid joining non-existent columns by fetching profiles separately
   const { data: clientsData, count: clientsCount } = await supabase
     .from("companies")
-    .select(`
-        *,
-        profiles!inner ( full_name, email, avatar_url )
-    `, { count: "exact" })
+    .select("*", { count: "exact" })
     .order("created_at", { ascending: false })
-  
+
   // 2. Fetch Interpreters
   const { data: interpretersData, count: interpretersCount } = await supabase
     .from("interpreters")
-    .select(`
-        *,
-        profiles!inner ( full_name, email, avatar_url )
-    `, { count: "exact" })
+    .select("*", { count: "exact" })
     .order("created_at", { ascending: false })
-  
+
   const interpreters = interpretersData || []
   const companies = clientsData || []
 
-  // 3. Process URLs for display (Only for fetched data)
-  const clientsWithUrls = await Promise.all(companies.map(async (c) => ({
+  // 3. Fetch profiles for all users (safe: select * so it works regardless of schema migrations)
+  const allIds = [
+    ...companies.map((c: any) => c.id),
+    ...interpreters.map((i: any) => i.id),
+  ].filter(Boolean)
+
+  const { data: profilesData } = allIds.length > 0
+    ? await supabase.from("profiles").select("*").in("id", allIds)
+    : { data: [] }
+
+  const profilesMap = new Map((profilesData || []).map((p: any) => [p.id, p]))
+
+  // 4. Process URLs for display (Only for fetched data)
+  const clientsWithUrls = await Promise.all(companies.map(async (c: any) => ({
       ...c,
+      profiles: profilesMap.get(c.id) || {},
       role: "client",
       documentUrls: await getDocumentUrls(supabase, "client-documents", c.documents)
   })))
 
-  const interpretersWithUrls = await Promise.all(interpreters.map(async (i) => {
+  const interpretersWithUrls = await Promise.all(interpreters.map(async (i: any) => {
       const docs = i.documents || {}
       // Add legacy if missing from docs
       if (i.signed_policy_url && !docs["Legacy Signed Policy"]) {
@@ -74,6 +81,7 @@ export default async function AdminPage({
       }
       return {
           ...i,
+          profiles: profilesMap.get(i.id) || {},
           role: "interpreter",
           documentUrls: await getDocumentUrls(supabase, "interpreter-documents", docs)
       }

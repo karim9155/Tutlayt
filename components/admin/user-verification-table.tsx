@@ -63,8 +63,8 @@ export function UserVerificationTable({
       ...c, 
       role: 'client', 
       sortDate: c.created_at,
-      displayName: c.profiles?.full_name || 'Unnamed Client',
-      displayEmail: c.profiles?.email,
+      displayName: c.company_name || 'Unnamed Client',
+      displayEmail: c.profiles?.email || c.email,
       displayStatus: c.verification_status || 'pending'
     }))
 
@@ -72,8 +72,8 @@ export function UserVerificationTable({
       ...i, 
       role: 'interpreter', 
       sortDate: i.created_at,
-      displayName: i.profiles?.full_name || 'Unnamed Interpreter',
-      displayEmail: i.profiles?.email,
+      displayName: i.profiles?.full_name || [i.profiles?.first_name, i.profiles?.last_name].filter(Boolean).join(' ') || 'Unnamed Interpreter',
+      displayEmail: i.profiles?.email || i.email,
       displayStatus: i.verified ? 'verified' : (i.rejection_reason ? 'rejected' : 'pending')
     }))
 

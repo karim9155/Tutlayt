@@ -88,7 +88,7 @@ export async function initiateCreditPurchase(formData: FormData) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, email")
+    .select("company_name, email")
     .eq("id", user.id)
     .single()
 
@@ -130,7 +130,7 @@ export async function initiateCreditPurchase(formData: FormData) {
       tva_amount: tvaAmount,
       total_amount: totalAmount,
       currency,
-      client_name: profile?.full_name ?? "",
+      client_name: profile?.company_name ?? "",
       client_company: company.company_name ?? "",
       client_fiscal_id: company.fiscal_id ?? null,
     })

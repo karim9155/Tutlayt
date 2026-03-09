@@ -74,7 +74,7 @@ export default async function ClientDashboard() {
   const { data: bookings } = await supabase
     .from("bookings")
     .select("*, interpreters(full_name)")
-    .eq("company_id", user.id)
+    .eq("client_id", user.id)
     .order("created_at", { ascending: false })
     .limit(5)
 

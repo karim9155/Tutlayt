@@ -13,8 +13,24 @@ interface TagInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 
 export function TagInput({ className, defaultTags = [], onTagsChange, name, ...props }: TagInputProps) {
   // Deduplicate defaultTags to prevent key collisions
-  const [tags, setTags] = React.useState<string[]>(Array.from(new Set(defaultTags)))
+  const [tags, setTags] = React.useState<string[]>(() => Array.from(new Set(defaultTags)))
   const [inputValue, setInputValue] = React.useState("")
+
+  // Re-sync when defaultTags changes (ensures SSR-hydrated data shows correctly)
+  const defaultTagsKey = defaultTags.join(",")
+  React.useEffect(() => {
+    if (defaultTags.length > 0) {
+      setTags(Array.from(new Set(defaultTags)))
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultTagsKey])
+
+  // Re-sync when defaultTags prop changes (e.g. after server data loads)
+  React.useEffect(() => {
+    if (defaultTags && defaultTags.length > 0) {
+      setTags(Array.from(new Set(defaultTags)))
+    }
+  }, [JSON.stringify(defaultTags)]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" || e.key === "," || e.key === " ") {

@@ -7,18 +7,24 @@ export default async function InterpreterMissionsPage() {
 
   if (!user) return null
 
-  const { data: missions, error } = await supabase
+  const { data: missionsRaw, error } = await supabase
     .from("bookings")
     .select(`
       *,
       profiles:client_id (
-        full_name,
-        email,
-        avatar_url
+        *
       )
     `)
     .eq("interpreter_id", user.id)
     .order("created_at", { ascending: false })
+
+  // Normalise name: handle pre/post migration 024 (full_name → company_name)
+  const missions = (missionsRaw || []).map((m: any) => ({
+    ...m,
+    profiles: m.profiles
+      ? { ...m.profiles, company_name: m.profiles.company_name || m.profiles.full_name }
+      : m.profiles,
+  }))
 
   if (error) {
     console.error("Error fetching interpreter missions:", error)
