@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Calendar, Home, Search, User, LogOut, Briefcase, CreditCard, Headphones, Menu, X } from "lucide-react"
+import { Calendar, Home, Search, User, LogOut, Briefcase, CreditCard, Headphones, Menu, X, BookOpen } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { logout } from "@/app/auth/actions"
@@ -21,6 +21,7 @@ const clientItems = [
 const interpreterItems = [
   { title: "Dashboard", url: "/dashboard/interpreter", icon: Home },
   { title: "My Availability", url: "/dashboard/interpreter/availability", icon: Calendar },
+  { title: "My Bookings", url: "/dashboard/interpreter/bookings", icon: BookOpen },
   { title: "My Missions", url: "/dashboard/interpreter/missions", icon: Briefcase },
   { title: "Profile", url: "/dashboard/interpreter/profile", icon: User },
 ]

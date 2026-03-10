@@ -16,10 +16,10 @@ export async function updateCompanyProfile(formData: FormData) {
   const website = formData.get("website") as string
   const fiscalId = formData.get("fiscalId") as string
 
-  // 1. Update profiles table (company_name, phone)
+  // 1. Update profiles table (full_name)
   const { error: profileError } = await supabase
     .from("profiles")
-    .update({ company_name: fullName, phone })
+    .update({ full_name: fullName })
     .eq("id", user.id)
 
   if (profileError) {
@@ -36,6 +36,7 @@ export async function updateCompanyProfile(formData: FormData) {
       client_type: clientType,
       website,
       fiscal_id: fiscalId,
+      phone,
     })
     .eq("id", user.id)
     .select()
@@ -56,6 +57,7 @@ export async function updateCompanyProfile(formData: FormData) {
         client_type: clientType,
         website,
         fiscal_id: fiscalId,
+        phone,
       })
     if (insertError) {
       console.error("Error inserting company profile:", insertError)

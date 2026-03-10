@@ -14,6 +14,7 @@ export function SearchFilters() {
   const [city, setCity] = useState(searchParams.get("city") || "")
   const [language, setLanguage] = useState(searchParams.get("language") || "")
   const [specialization, setSpecialization] = useState(searchParams.get("specialization") || "")
+  const [name, setName] = useState(searchParams.get("name") || "")
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -28,6 +29,9 @@ export function SearchFilters() {
     if (specialization) params.set("specialization", specialization)
     else params.delete("specialization")
 
+    if (name) params.set("name", name)
+    else params.delete("name")
+
     router.push(`${pathname}?${params.toString()}`)
   }
 
@@ -35,15 +39,27 @@ export function SearchFilters() {
     setCity("")
     setLanguage("")
     setSpecialization("")
+    setName("")
     router.push(pathname)
   }
 
-  const hasFilters = city || language || specialization
+  const hasFilters = city || language || specialization || name
 
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
       <h3 className="font-semibold mb-4 text-[var(--deep-navy)]">Filters</h3>
       <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="name" className="text-[var(--deep-navy)]">Name</Label>
+          <Input
+            id="name"
+            placeholder="Search by name..."
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="border-gray-200 focus:border-[var(--teal)] focus:ring-[var(--teal)]"
+          />
+        </div>
+
         <div className="space-y-2">
           <Label htmlFor="city" className="text-[var(--deep-navy)]">City</Label>
           <Input 

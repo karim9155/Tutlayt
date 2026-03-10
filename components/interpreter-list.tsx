@@ -36,18 +36,9 @@ export function InterpreterList({
           : "New"
         const reviewCount = ratings.length
 
-        // Access Control Logic
-        // Mask name if not allowed to view PII
-        const interpreterName = interpreter.profiles?.company_name || interpreter.profiles?.full_name
-        let displayName = interpreterName || `Interpreter #${interpreter.id.slice(0, 8).toUpperCase()}`
-        
-        if (!canViewPII && interpreterName) {
-            const parts = interpreterName.trim().split(/\s+/)
-            if (parts.length > 0) {
-                // Take first letter of each name part
-                displayName = parts.map((p: string) => p[0].toUpperCase() + ".").join(" ")
-            }
-        }
+        // Access Control Logic — always show full name on search page
+        const interpreterName = interpreter.profiles?.full_name || interpreter.profiles?.company_name
+        const displayName = interpreterName || `Interpreter #${interpreter.id.slice(0, 8).toUpperCase()}`
         
         const showAvatar = true
         const canViewProfile = true

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,6 +18,7 @@ interface ClientProfileFormProps {
 
 export function ClientProfileForm({ profile, company }: ClientProfileFormProps) {
   const router = useRouter()
+  const formRef = useRef<HTMLFormElement>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState("personal")
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
@@ -26,47 +27,48 @@ export function ClientProfileForm({ profile, company }: ClientProfileFormProps) 
   const tabs = ["personal", "organization", "billing"]
   const currentIndex = tabs.indexOf(activeTab)
 
-  const handleNext = () => {
-    if (currentIndex < tabs.length - 1) {
-      setActiveTab(tabs[currentIndex + 1])
-    }
-  }
-
-  const handlePrev = () => {
-    if (currentIndex > 0) {
-      setActiveTab(tabs[currentIndex - 1])
-    }
-  }
-
-  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+  async function saveForm() {
+    if (!formRef.current) return false
     setIsLoading(true)
-
-    const formData = new FormData(event.currentTarget)
-    console.log("Form data being sent:", Object.fromEntries(formData))
-    
     setSuccessMsg(null)
     setErrorMsg(null)
+    const formData = new FormData(formRef.current)
     try {
       const result = await updateCompanyProfile(formData)
       if (result?.error) {
         setErrorMsg(result.error)
-      } else {
-        setSuccessMsg("Profile saved successfully!")
-        setTimeout(() => {
-          setSuccessMsg(null)
-          router.refresh()
-        }, 3000)
+        return false
       }
-    } catch (error) {
+      setSuccessMsg("Saved!")
+      setTimeout(() => setSuccessMsg(null), 2000)
+      router.refresh()
+      return true
+    } catch {
       setErrorMsg("Something went wrong. Please try again.")
+      return false
     } finally {
       setIsLoading(false)
     }
   }
 
+  const handleNext = async () => {
+    const ok = await saveForm()
+    if (ok && currentIndex < tabs.length - 1) {
+      setActiveTab(tabs[currentIndex + 1])
+    }
+  }
+
+  const handlePrev = () => {
+    if (currentIndex > 0) setActiveTab(tabs[currentIndex - 1])
+  }
+
+  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    await saveForm()
+  }
+
   return (
-    <form onSubmit={onSubmit}>
+    <form onSubmit={onSubmit} ref={formRef}>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <div className="mb-8">
           <TabsList className="flex w-full bg-[var(--azureish-white)] p-1 h-auto">
@@ -111,8 +113,7 @@ export function ClientProfileForm({ profile, company }: ClientProfileFormProps) 
                     id="fullName"
                     name="fullName"
                     placeholder="John Doe"
-                    defaultValue={profile?.company_name}
-                    required
+                    defaultValue={profile?.full_name ?? ""}
                     className="border-gray-200 focus:border-[var(--deep-navy)] focus:ring-[var(--deep-navy)] rounded-lg bg-[var(--azureish-white)]/50"
                   />
                 </div>
@@ -124,7 +125,7 @@ export function ClientProfileForm({ profile, company }: ClientProfileFormProps) 
                     name="phone"
                     type="tel"
                     placeholder="+216 XX XXX XXX"
-                    defaultValue={profile?.phone}
+                    defaultValue={company?.phone ?? ""}
                     className="border-gray-200 focus:border-[var(--deep-navy)] focus:ring-[var(--deep-navy)] rounded-lg bg-[var(--azureish-white)]/50"
                   />
                 </div>
@@ -133,7 +134,7 @@ export function ClientProfileForm({ profile, company }: ClientProfileFormProps) 
                   <Label htmlFor="email-display" className="text-[var(--deep-navy)]">Email</Label>
                   <Input
                     id="email-display"
-                    value={profile?.email}
+                    value={profile?.email ?? ""}
                     disabled
                     className="bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed rounded-lg"
                   />
@@ -150,8 +151,7 @@ export function ClientProfileForm({ profile, company }: ClientProfileFormProps) 
                   <Input 
                     id="companyName" 
                     name="companyName" 
-                    defaultValue={company?.company_name}
-                    required 
+                    defaultValue={company?.company_name ?? ""}
                     className="border-gray-200 focus:border-[var(--deep-navy)] focus:ring-[var(--deep-navy)] rounded-lg bg-[var(--azureish-white)]/50"
                   />
                 </div>
@@ -162,7 +162,7 @@ export function ClientProfileForm({ profile, company }: ClientProfileFormProps) 
                     id="industry" 
                     name="industry" 
                     placeholder="Technology, Healthcare, etc."
-                    defaultValue={company?.industry}
+                    defaultValue={company?.industry ?? ""}
                     className="border-gray-200 focus:border-[var(--deep-navy)] focus:ring-[var(--deep-navy)] rounded-lg bg-[var(--azureish-white)]/50"
                   />
                 </div>
@@ -200,7 +200,7 @@ export function ClientProfileForm({ profile, company }: ClientProfileFormProps) 
                     name="website" 
                     type="url"
                     placeholder="https://example.com"
-                    defaultValue={company?.website}
+                    defaultValue={company?.website ?? ""}
                     className="border-gray-200 focus:border-[var(--deep-navy)] focus:ring-[var(--deep-navy)] rounded-lg bg-[var(--azureish-white)]/50"
                   />
                 </div>
@@ -216,8 +216,7 @@ export function ClientProfileForm({ profile, company }: ClientProfileFormProps) 
                     id="fiscalId" 
                     name="fiscalId" 
                     placeholder="1234567/A/B/000"
-                    defaultValue={company?.fiscal_id}
-                    required 
+                    defaultValue={company?.fiscal_id ?? ""}
                     className="border-gray-200 focus:border-[var(--deep-navy)] focus:ring-[var(--deep-navy)] rounded-lg bg-[var(--azureish-white)]/50"
                   />
                   <p className="text-xs text-gray-500">Required for invoicing and tax purposes.</p>
@@ -251,30 +250,23 @@ export function ClientProfileForm({ profile, company }: ClientProfileFormProps) 
                 Previous
               </Button>
 
-              {currentIndex === tabs.length - 1 ? (
-                <Button 
-                  type="submit" 
-                  disabled={isLoading}
-                  className="bg-[var(--deep-navy)] hover:bg-[var(--deep-navy)]/90 text-white min-w-[120px]"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    "Save Profile"
-                  )}
-                </Button>
-              ) : (
-                <Button 
-                  type="button" 
-                  onClick={handleNext}
-                  className="bg-[var(--deep-navy)] hover:bg-[var(--deep-navy)]/90 text-white"
-                >
-                  Next Step
-                </Button>
-              )}
+              <Button
+                type={currentIndex === tabs.length - 1 ? "submit" : "button"}
+                onClick={currentIndex < tabs.length - 1 ? handleNext : undefined}
+                disabled={isLoading}
+                className="bg-[var(--deep-navy)] hover:bg-[var(--deep-navy)]/90 text-white min-w-[120px]"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : currentIndex === tabs.length - 1 ? (
+                  "Save Profile"
+                ) : (
+                  "Next & Save"
+                )}
+              </Button>
             </div>
           </CardContent>
         </Card>

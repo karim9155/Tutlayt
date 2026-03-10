@@ -5,7 +5,7 @@ import { SearchFilters } from "@/components/search-filters"
 import { InterpreterList } from "@/components/interpreter-list"
 import { redirect } from "next/navigation"
 
-export default async function SearchPage({ searchParams }: { searchParams: Promise<{ city?: string, language?: string, specialization?: string }> }) {
+export default async function SearchPage({ searchParams }: { searchParams: Promise<{ city?: string, language?: string, specialization?: string, name?: string }> }) {
   const filters = await searchParams
   const supabase = await createClient()
 

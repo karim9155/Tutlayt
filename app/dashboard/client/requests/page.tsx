@@ -7,8 +7,27 @@ import { Badge } from "@/components/ui/badge"
 import { Calendar, Clock, Globe, Tag, DollarSign, UserSearch, ArrowLeft, User } from "lucide-react"
 import { format } from "date-fns"
 import { CancelRequestButton } from "./cancel-button"
+import { PaginationControls } from "@/components/pagination-controls"
 
-export default async function ClientRequestsPage() {
+const PAGE_SIZE = 2
+
+const FILTERS = [
+  { label: "All", value: "" },
+  { label: "Pending", value: "pending" },
+  { label: "Waiting for Interpreter", value: "assigned" },
+  { label: "Accepted", value: "fulfilled" },
+  { label: "Declined", value: "declined" },
+  { label: "Cancelled", value: "cancelled" },
+]
+
+export default async function ClientRequestsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string; page?: string }>
+}) {
+  const { status: statusFilter = "", page: pageParam = "1" } = await searchParams
+  const currentPage = Math.max(1, parseInt(pageParam, 10))
+
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -56,6 +75,13 @@ export default async function ClientRequestsPage() {
     declined: "Interpreter declined — Being reassigned",
   }
 
+  const allRequests = requests || []
+  const filtered = statusFilter
+    ? allRequests.filter((r: any) => r.status === statusFilter)
+    : allRequests
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
+  const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+
   return (
     <div className="space-y-8 p-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -68,9 +94,32 @@ export default async function ClientRequestsPage() {
         </div>
       </div>
 
-      {requests && requests.length > 0 ? (
+      {/* Filter tabs */}
+      <div className="flex gap-2 flex-wrap">
+        {FILTERS.map((f) => {
+          const isActive = statusFilter === f.value
+          const href = f.value
+            ? `/dashboard/client/requests?status=${f.value}`
+            : `/dashboard/client/requests`
+          return (
+            <Link
+              key={f.value}
+              href={href}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                isActive
+                  ? "bg-[var(--deep-navy)] text-white border-[var(--deep-navy)]"
+                  : "bg-white text-gray-600 border-gray-200 hover:border-[var(--deep-navy)]"
+              }`}
+            >
+              {f.label}
+            </Link>
+          )
+        })}
+      </div>
+
+      {paginated.length > 0 ? (
         <div className="grid gap-6">
-          {requests.map((request: any) => (
+          {paginated.map((request: any) => (
             <Card key={request.id} className="border-none shadow-md bg-white overflow-hidden">
               <div className={`h-2 w-full ${
                 request.status === 'fulfilled' ? 'bg-green-500' :
@@ -161,15 +210,28 @@ export default async function ClientRequestsPage() {
           <div className="mx-auto h-12 w-12 text-gray-300 mb-3">
             <UserSearch className="h-full w-full" />
           </div>
-          <h3 className="text-lg font-medium text-[var(--deep-navy)]">No requests yet</h3>
-          <p className="text-gray-500 mt-1 mb-6">You haven&apos;t submitted any interpreter requests.</p>
-          <Link href="/dashboard/client">
-            <Button className="bg-[var(--teal)] text-white hover:bg-[var(--teal)]/90">
-              Go to Dashboard
-            </Button>
-          </Link>
+          <h3 className="text-lg font-medium text-[var(--deep-navy)]">
+            {statusFilter ? `No ${FILTERS.find(f => f.value === statusFilter)?.label.toLowerCase()} requests` : "No requests yet"}
+          </h3>
+          <p className="text-gray-500 mt-1 mb-6">
+            {statusFilter ? "Try a different filter." : "You haven't submitted any interpreter requests."}
+          </p>
+          {!statusFilter && (
+            <Link href="/dashboard/client">
+              <Button className="bg-[var(--teal)] text-white hover:bg-[var(--teal)]/90">
+                Go to Dashboard
+              </Button>
+            </Link>
+          )}
         </div>
       )}
+
+      <PaginationControls
+        currentPage={currentPage}
+        totalPages={totalPages}
+        basePath="/dashboard/client/requests"
+        params={{ status: statusFilter || undefined }}
+      />
     </div>
   )
 }

@@ -54,6 +54,9 @@ export async function Navbar() {
               <Link href="/dashboard/interpreter" className="text-sm font-medium text-[var(--deep-navy)] hover:text-[var(--teal)] transition-colors">
                 Dashboard
               </Link>
+              <Link href="/dashboard/interpreter/bookings" className="text-sm font-medium text-[var(--deep-navy)] hover:text-[var(--teal)] transition-colors">
+                My Bookings
+              </Link>
               <Link href="/dashboard/interpreter/availability" className="text-sm font-medium text-[var(--deep-navy)] hover:text-[var(--teal)] transition-colors">
                 My Availability
               </Link>
