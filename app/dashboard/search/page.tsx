@@ -99,6 +99,7 @@ export default async function DashboardSearchPage({ searchParams }: { searchPara
             basePath="/dashboard/interpreters" 
             userRole={profile?.role} 
             clientType={clientType}
+            isVerified={isClientVerified}
           />
 
           <PaginationControls

@@ -1,6 +1,6 @@
 "use client"
 
-import { Home, FileText, LogOut, Mic, ClipboardList } from "lucide-react"
+import { Home, FileText, LogOut, Mic, ClipboardList, KeyRound } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
@@ -39,6 +39,11 @@ const adminItems = [
     title: "Requests",
     url: "/admin/requests",
     icon: ClipboardList,
+  },
+  {
+    title: "Access Codes",
+    url: "/admin/access-codes",
+    icon: KeyRound,
   },
 ]
 

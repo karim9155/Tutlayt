@@ -7,41 +7,60 @@ import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { sendEmail } from "@/lib/email"
 
-const ADMIN_CREDENTIALS = {
-  username: "mustpha",
-  password: "mustfa912345@@"
-}
-
 async function ensureAdmin() {
     const cookieStore = await cookies()
     if (cookieStore.get("admin_session")?.value !== "true") {
         throw new Error("Unauthorized")
     }
+    // Verify the live Supabase session still belongs to an admin
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error("Unauthorized")
+    const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single()
+    if (profile?.role !== "admin") throw new Error("Unauthorized")
 }
 
 export async function adminLogin(formData: FormData) {
-  const username = formData.get("username") as string
+  const email = formData.get("email") as string
   const password = formData.get("password") as string
 
-  if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
-    const cookieStore = await cookies()
-    cookieStore.set("admin_session", "true", {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        maxAge: 60 * 60 * 24, // 1 day
-        path: "/",
-    })
-    redirect("/admin")
+  const supabase = await createClient()
+
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+
+  if (error || !data.user) {
+    redirect("/admin/login?error=Invalid%20credentials")
   }
-  
-  // Create a way to return error appropriately, maybe search params or just no-op locally for now as it refreshes page.
-  // Actually, better to redirect back to login? Or simple return. 
-  // Actions in forms that return values don't automatically show up unless using useFormState.
-  // Given the simplicity requested, let's redirect with error query param if failure.
-  redirect("/admin/login?error=Invalid%20credentials")
+
+  // Verify the signed-in user has the admin role
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", data.user.id)
+    .single()
+
+  if (profile?.role !== "admin") {
+    await supabase.auth.signOut()
+    redirect("/admin/login?error=Access%20denied")
+  }
+
+  const cookieStore = await cookies()
+  cookieStore.set("admin_session", "true", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 60 * 60 * 24, // 1 day
+      path: "/",
+  })
+  redirect("/admin")
 }
 
 export async function adminLogout() {
+    const supabase = await createClient()
+    await supabase.auth.signOut()
     const cookieStore = await cookies()
     cookieStore.delete("admin_session")
     redirect("/admin/login")
@@ -714,5 +733,82 @@ export async function addAdminNoteToRequest(requestId: string, note: string) {
   }
 
   revalidatePath("/admin/requests")
+  return { success: true }
+}
+
+// ===========================================
+// One-Time Access Codes
+// ===========================================
+
+export async function generateOneTimeCode(description?: string) {
+  try {
+    await ensureAdmin()
+  } catch (e) {
+    return { error: "Unauthorized" }
+  }
+  const supabase = createAdminClient()
+
+  const letters = Array.from({ length: 3 }, () =>
+    String.fromCharCode(65 + Math.floor(Math.random() * 26))
+  ).join("")
+  const digits = String(Math.floor(Math.random() * 100000)).padStart(5, "0")
+  const code = `${letters}-${digits}`
+
+  const { data, error } = await supabase
+    .from("one_time_access_codes")
+    .insert({ code, description: description || null })
+    .select()
+    .single()
+
+  if (error) {
+    console.error("Error generating one-time code:", error)
+    return { error: error.message }
+  }
+
+  revalidatePath("/admin")
+  return { success: true, code: data.code as string, id: data.id as string }
+}
+
+export async function revokeOneTimeAccess(userId: string) {
+  try {
+    await ensureAdmin()
+  } catch (e) {
+    return { error: "Unauthorized" }
+  }
+  const supabase = createAdminClient()
+
+  const { error } = await supabase.auth.admin.updateUserById(userId, {
+    ban_duration: "87600h", // ~10 years — effectively permanent
+  })
+
+  if (error) {
+    console.error("Error revoking one-time access:", error)
+    return { error: error.message }
+  }
+
+  revalidatePath("/admin")
+  return { success: true }
+}
+
+export async function deleteOneTimeCode(id: string) {
+  try {
+    await ensureAdmin()
+  } catch (e) {
+    return { error: "Unauthorized" }
+  }
+  const supabase = createAdminClient()
+
+  const { error } = await supabase
+    .from("one_time_access_codes")
+    .delete()
+    .eq("id", id)
+    .eq("used", false) // Only allow deleting unused codes
+
+  if (error) {
+    console.error("Error deleting one-time code:", error)
+    return { error: error.message }
+  }
+
+  revalidatePath("/admin")
   return { success: true }
 }

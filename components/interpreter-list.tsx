@@ -7,14 +7,18 @@ export function InterpreterList({
   interpreters, 
   basePath = "/interpreter",
   userRole = "company",
-  clientType
+  clientType,
+  isVerified,
 }: { 
   interpreters: any[] | null, 
   basePath?: string,
   userRole?: "admin" | "company" | "interpreter",
-  clientType?: string | null
+  clientType?: string | null,
+  isVerified?: boolean,
 }) {
   const canViewPII = userRole === "admin" || userRole === "interpreter"
+  // Unverified company clients see initials only and cannot access profiles
+  const isUnverifiedClient = userRole === "company" && isVerified === false
 
   const scrubPII = (text: string) => {
     if (!text) return ""
@@ -36,12 +40,16 @@ export function InterpreterList({
           : "New"
         const reviewCount = ratings.length
 
-        // Access Control Logic — always show full name on search page
+        // Access Control Logic
         const interpreterName = interpreter.profiles?.full_name || interpreter.profiles?.company_name
-        const displayName = interpreterName || `Interpreter #${interpreter.id.slice(0, 8).toUpperCase()}`
-        
-        const showAvatar = true
-        const canViewProfile = true
+        const fullName = interpreterName || `Interpreter #${interpreter.id.slice(0, 8).toUpperCase()}`
+        // Unverified company clients only see initials (e.g. "J. D.")
+        const displayName = isUnverifiedClient
+          ? fullName.split(' ').map((w: string) => w[0]?.toUpperCase() + '.').join(' ')
+          : fullName
+
+        const showAvatar = !isUnverifiedClient
+        const canViewProfile = !isUnverifiedClient
 
         return (
         <div key={interpreter.id} className="bg-white p-6 rounded-xl shadow-sm border border-[var(--teal)]/10 flex flex-col md:flex-row gap-6 hover:shadow-md transition-shadow">

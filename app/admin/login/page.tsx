@@ -20,8 +20,8 @@ export default function AdminLoginPage() {
         <form action={adminLogin}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username" className="text-gray-700">Username</Label>
-              <Input id="username" name="username" type="text" placeholder="Username" required className="bg-white" />
+              <Label htmlFor="email" className="text-gray-700">Email</Label>
+              <Input id="email" name="email" type="email" placeholder="admin@example.com" required className="bg-white" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password" className="text-gray-700">Password</Label>

@@ -1,6 +1,7 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { revalidatePath } from "next/cache"
 
 export async function submitSignedDocument(formData: FormData) {
@@ -34,7 +35,7 @@ export async function submitSignedDocument(formData: FormData) {
   // Update company status and documents list
   const { data: company } = await supabase
     .from("companies")
-    .select("documents, verification_status")
+    .select("documents, verification_status, client_type")
     .eq("id", user.id)
     .single()
 
@@ -47,12 +48,24 @@ export async function submitSignedDocument(formData: FormData) {
      }
   }
 
-  // If status is unverified, move to pending_approval
-  // (Assuming that uploading at least one document starts the process, 
-  // or we could wait for ALL documents. Let's start process on first upload).
   let newStatus = company?.verification_status
-  if (newStatus === 'unverified' || !newStatus) {
+
+  if (company?.client_type === 'one_time') {
+    // One-time clients were pre-approved by the admin (who issued the code).
+    // Auto-verify them as soon as all required documents are signed.
+    const adminClient = createAdminClient()
+    const { data: templateFiles } = await adminClient.storage
+      .from('client-documents')
+      .list('', { limit: 100, sortBy: { column: 'name', order: 'asc' } })
+    const templates = (templateFiles || []).filter((f: any) => f.name.toLowerCase().endsWith('.pdf'))
+    const allSigned = templates.every((t: any) => !!updatedDocs[t.name])
+    newStatus = allSigned ? 'verified' : (newStatus === 'verified' ? 'verified' : 'unverified')
+  } else {
+    // Regular clients move to pending_approval on first document upload;
+    // an admin then manually verifies them.
+    if (newStatus === 'unverified' || !newStatus) {
       newStatus = 'pending_approval'
+    }
   }
 
   const { error } = await supabase
