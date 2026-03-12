@@ -27,6 +27,7 @@ import { toast } from "sonner"
 import { submitEquipmentRequest } from "@/app/actions/equipment"
 import { Loader2, Calendar, Mail, FileText, Building, AlertCircle } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 const equipmentOptions = [
   { id: "booths", label: "Interpretation Booths (ISO 4043)" },
@@ -41,19 +42,25 @@ const equipmentOptions = [
 interface EquipmentBookingDialogProps {
   isCompanyUser?: boolean
   documentsVerified?: boolean
+  isLoggedIn?: boolean
 }
 
-export function EquipmentBookingDialog({ isCompanyUser = false, documentsVerified = false }: EquipmentBookingDialogProps) {
+export function EquipmentBookingDialog({ isCompanyUser = false, documentsVerified = false, isLoggedIn = false }: EquipmentBookingDialogProps) {
   const [open, setOpen] = useState(false)
   const [showErrorAlert, setShowErrorAlert] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [selectedEquipment, setSelectedEquipment] = useState<string[]>([])
+  const router = useRouter()
 
   // Block only logged-in company users who haven't signed all documents.
   // Anonymous visitors or other roles can use the form freely.
   const isBlocked = isCompanyUser && !documentsVerified
 
   function handleRequestClick() {
+    if (!isLoggedIn) {
+      router.push("/signup?role=client")
+      return
+    }
     if (isBlocked) {
       setShowErrorAlert(true)
     } else {

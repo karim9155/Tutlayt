@@ -56,7 +56,7 @@ export default async function EquipmentPage() {
               From ISO-compliant booths to crystal-clear headsets.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <EquipmentBookingDialog isCompanyUser={isCompanyUser} documentsVerified={documentsVerified} />
+              <EquipmentBookingDialog isCompanyUser={isCompanyUser} documentsVerified={documentsVerified} isLoggedIn={!!user} />
             </div>
           </div>
         </section>
