@@ -419,9 +419,15 @@ export async function getInterpreterRequests() {
     if (linkedBooking?.status === 'accepted') effectiveStatus = 'fulfilled'
     else if (linkedBooking?.status === 'declined') effectiveStatus = 'declined'
 
+    const assignedProfile = interpretersMap.get(r.assigned_interpreter_id)
+    const assignedName = assignedProfile
+      ? (assignedProfile.company_name || assignedProfile.full_name || null)
+      : null
+
     return {
       ...r,
       status: effectiveStatus,
+      assigned_interpreter_name: assignedName,
       client: profile ? { ...profile, company_name: company?.company_name || profile?.email || 'Unknown Client' } : null,
       suggested_interpreter: interpretersMap.get(r.suggested_interpreter_id) || null,
       assigned_interpreter: interpretersMap.get(r.assigned_interpreter_id) || null,

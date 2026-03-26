@@ -105,10 +105,10 @@ export default async function AdminRequestsPage({ searchParams }: { searchParams
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      {request.assigned_interpreter && (
+                      {request.assigned_interpreter_name && (
                         <span className="text-sm text-blue-700 font-medium flex items-center gap-1">
                           <User className="w-3.5 h-3.5" />
-                          {(request.assigned_interpreter as any).full_name}
+                          {request.assigned_interpreter_name}
                         </span>
                       )}
                       <Badge className={`${statusColors[request.status] || 'bg-gray-100 text-gray-600'} border-none`}>
@@ -137,12 +137,10 @@ export default async function AdminRequestsPage({ searchParams }: { searchParams
                       <DollarSign className="w-4 h-4 text-gray-400" />
                       <span className="text-gray-600 font-medium">Budget: {request.budget} {request.currency}</span>
                     </div>
-                    {['assigned', 'fulfilled', 'declined'].includes(request.status) && (
+                    {['assigned', 'fulfilled', 'declined'].includes(request.status) && request.assigned_interpreter_name && (
                       <div className="flex items-center gap-2">
                         <User className="w-4 h-4 text-gray-400" />
-                        <span className="text-gray-600 font-medium">
-                          {(request.assigned_interpreter as any)?.full_name || '—'}
-                        </span>
+                        <span className="text-gray-600 font-medium">{request.assigned_interpreter_name}</span>
                       </div>
                     )}
                   </div>
