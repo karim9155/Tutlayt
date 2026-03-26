@@ -385,9 +385,10 @@ export async function getInterpreterRequests() {
     ...requests.map((r: any) => r.suggested_interpreter_id),
     ...requests.map((r: any) => r.assigned_interpreter_id),
   ].filter(Boolean))]
+  const bookingIds = [...new Set(requests.map((r: any) => r.booking_id).filter(Boolean))]
 
-  // Batch fetch profiles and company names
-  const [profilesResult, interpretersResult, companiesResult] = await Promise.all([
+  // Batch fetch profiles, company names, and linked bookings
+  const [profilesResult, interpretersResult, companiesResult, bookingsResult] = await Promise.all([
     clientIds.length > 0
       ? supabase.from("profiles").select("id, email").in("id", clientIds)
       : { data: [] },
@@ -397,18 +398,30 @@ export async function getInterpreterRequests() {
     clientIds.length > 0
       ? supabase.from("companies").select("id, company_name").in("id", clientIds)
       : { data: [] },
+    bookingIds.length > 0
+      ? supabase.from("bookings").select("id, status").in("id", bookingIds)
+      : { data: [] },
   ])
 
   const profilesMap = new Map((profilesResult.data || []).map((p: any) => [p.id, p]))
   const interpretersMap = new Map((interpretersResult.data || []).map((i: any) => [i.id, i]))
   const companiesMap = new Map((companiesResult.data || []).map((c: any) => [c.id, c]))
+  const bookingsMap = new Map((bookingsResult.data || []).map((b: any) => [b.id, b]))
 
-  // Attach related data to each request
+  // Attach related data to each request, using booking status to override when applicable
   const enrichedRequests = requests.map((r: any) => {
     const profile = profilesMap.get(r.client_id)
     const company = companiesMap.get(r.client_id)
+    const linkedBooking = r.booking_id ? bookingsMap.get(r.booking_id) : null
+
+    // Derive effective status: if the linked booking was accepted/declined, reflect that
+    let effectiveStatus = r.status
+    if (linkedBooking?.status === 'accepted') effectiveStatus = 'fulfilled'
+    else if (linkedBooking?.status === 'declined') effectiveStatus = 'declined'
+
     return {
       ...r,
+      status: effectiveStatus,
       client: profile ? { ...profile, company_name: company?.company_name || profile?.email || 'Unknown Client' } : null,
       suggested_interpreter: interpretersMap.get(r.suggested_interpreter_id) || null,
       assigned_interpreter: interpretersMap.get(r.assigned_interpreter_id) || null,

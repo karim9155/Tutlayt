@@ -104,9 +104,17 @@ export default async function AdminRequestsPage({ searchParams }: { searchParams
                         {format(new Date(request.created_at), "dd MMM yyyy, HH:mm")}
                       </p>
                     </div>
-                    <Badge className={`${statusColors[request.status] || 'bg-gray-100 text-gray-600'} border-none`}>
-                      {statusLabels[request.status] || request.status}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      {request.status === 'assigned' && request.assigned_interpreter && (
+                        <span className="text-sm text-blue-700 font-medium flex items-center gap-1">
+                          <User className="w-3.5 h-3.5" />
+                          {(request.assigned_interpreter as any).full_name}
+                        </span>
+                      )}
+                      <Badge className={`${statusColors[request.status] || 'bg-gray-100 text-gray-600'} border-none`}>
+                        {statusLabels[request.status] || request.status}
+                      </Badge>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4 text-sm">
