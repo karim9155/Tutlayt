@@ -408,6 +408,10 @@ export async function getInterpreterRequests() {
   const companiesMap = new Map((companiesResult.data || []).map((c: any) => [c.id, c]))
   const bookingsMap = new Map((bookingsResult.data || []).map((b: any) => [b.id, b]))
 
+  console.log("[getInterpreterRequests] interpreterIds:", interpreterIds)
+  console.log("[getInterpreterRequests] interpretersResult:", interpretersResult.data)
+  console.log("[getInterpreterRequests] sample request assigned_interpreter_id:", requests[0]?.assigned_interpreter_id)
+
   // Attach related data to each request, using booking status to override when applicable
   const enrichedRequests = requests.map((r: any) => {
     const profile = profilesMap.get(r.client_id)
