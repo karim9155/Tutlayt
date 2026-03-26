@@ -393,7 +393,7 @@ export async function getInterpreterRequests() {
       ? supabase.from("profiles").select("id, email").in("id", clientIds)
       : { data: [] },
     interpreterIds.length > 0
-      ? supabase.from("interpreters").select("id, full_name, hourly_rate").in("id", interpreterIds)
+      ? supabase.from("profiles").select("id, company_name, full_name").in("id", interpreterIds)
       : { data: [] },
     clientIds.length > 0
       ? supabase.from("companies").select("id, company_name").in("id", clientIds)
@@ -404,7 +404,7 @@ export async function getInterpreterRequests() {
   ])
 
   const profilesMap = new Map((profilesResult.data || []).map((p: any) => [p.id, p]))
-  const interpretersMap = new Map((interpretersResult.data || []).map((i: any) => [i.id, i]))
+  const interpretersMap = new Map((interpretersResult.data || []).map((i: any) => [i.id, { ...i, full_name: i.company_name || i.full_name || 'Unknown' }]))
   const companiesMap = new Map((companiesResult.data || []).map((c: any) => [c.id, c]))
   const bookingsMap = new Map((bookingsResult.data || []).map((b: any) => [b.id, b]))
 
