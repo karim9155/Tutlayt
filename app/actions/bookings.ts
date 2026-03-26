@@ -21,7 +21,7 @@ export async function createBooking(formData: FormData) {
   if (!userProfile || userProfile.role === 'company') {
     const { data: company } = await supabase
       .from('companies')
-      .select('documents')
+      .select('documents, balance')
       .eq('id', user.id)
       .single()
 
@@ -37,6 +37,13 @@ export async function createBooking(formData: FormData) {
 
     if (!allSigned) {
       return { error: "You must sign all required documents before booking. Please visit your dashboard to complete document signing." }
+    }
+
+    // Check client has sufficient balance to cover the interpreter's daily rate
+    const dailyRate = parseFloat(formData.get("dailyRate") as string)
+    const clientBalance = parseFloat(company?.balance ?? 0)
+    if (!isNaN(dailyRate) && dailyRate > 0 && clientBalance < dailyRate) {
+      return { error: `Insufficient balance. Current balance: ${clientBalance} TND. Required: ${dailyRate} TND.` }
     }
   }
   // --- End document signing guard ---
@@ -63,7 +70,7 @@ export async function createBooking(formData: FormData) {
   const startDateTime = new Date(`${startDate}T${startTime}`)
   const endDateTime = new Date(`${endDate}T${endTime}`)
 
-  const { error } = await supabase
+  const { data: newBooking, error } = await supabase
     .from("bookings")
     .insert({
       client_id: user.id,
@@ -82,10 +89,23 @@ export async function createBooking(formData: FormData) {
       preparation_materials_url: preparationMaterialsUrl,
       status: 'pending'
     })
+    .select("id")
+    .single()
 
   if (error) {
     console.error("Error creating booking:", error)
     return { error: error.message }
+  }
+
+  // Deduct balance from client at booking creation time
+  if (newBooking && !isNaN(price) && price > 0) {
+    const { deductBalanceForBooking } = await import("@/app/actions/payments")
+    const deductResult = await deductBalanceForBooking(newBooking.id, user.id, price, 'TND')
+    if (deductResult.error) {
+      // Rollback: delete the booking if deduction fails
+      await supabase.from("bookings").delete().eq("id", newBooking.id)
+      return { error: deductResult.error }
+    }
   }
 
   revalidatePath("/dashboard/interpreter")
@@ -104,18 +124,6 @@ export async function updateBookingStatus(bookingId: string, status: 'accepted' 
     .select("*")
     .eq("id", bookingId)
     .single()
-
-  // When accepting: deduct balance from client
-  if (status === 'accepted' && booking) {
-    const { deductBalanceForBooking } = await import("@/app/actions/payments")
-    const deductResult = await deductBalanceForBooking(
-      bookingId,
-      booking.client_id,
-      booking.price ?? 0,
-      booking.currency ?? 'TND'
-    )
-    if (deductResult.error) return { error: deductResult.error }
-  }
 
   const { error } = await supabase
     .from("bookings")
@@ -151,8 +159,6 @@ export async function updateBookingStatus(bookingId: string, status: 'accepted' 
         .from("interpreter_requests")
         .update({
           status: 'declined',
-          assigned_interpreter_id: null,
-          booking_id: null,
           updated_at: new Date().toISOString(),
         })
         .eq("id", linkedRequestId)

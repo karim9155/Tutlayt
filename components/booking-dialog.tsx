@@ -102,6 +102,7 @@ export function BookingDialog({ interpreterId, interpreterName, hourlyRate, docu
         const startTime = formData.get("startTime") as string
         const endTime = formData.get("endTime") as string
         
+        formData.append("dailyRate", (hourlyRate || 0).toString())
         if (startDate && startTime && endTime) {
           const start = new Date(`${startDate}T${startTime}`)
           const end = new Date(`${startDate}T${endTime}`)
