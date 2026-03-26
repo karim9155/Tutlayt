@@ -1,10 +1,11 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { revalidatePath } from "next/cache"
 
 export async function updateCompanyProfile(formData: FormData) {
   const supabase = await createClient()
-  
+
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return
 
@@ -16,10 +17,26 @@ export async function updateCompanyProfile(formData: FormData) {
   const website = formData.get("website") as string
   const fiscalId = formData.get("fiscalId") as string
 
-  // 1. Update profiles table (full_name)
+  // Handle logo upload
+  let logoUrl: string | null = null
+  const logoFile = formData.get("logoFile") as File
+  if (logoFile && logoFile.size > 0) {
+    const fileName = `${user.id}/logo_${Date.now()}_${logoFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`
+    const { error: uploadError } = await supabase.storage.from("client-documents").upload(fileName, logoFile, { upsert: true })
+    if (uploadError) {
+      console.error("Logo upload error:", uploadError)
+    } else {
+      logoUrl = supabase.storage.from("client-documents").getPublicUrl(fileName).data.publicUrl
+    }
+  }
+
+  // 1. Update profiles table (full_name + avatar_url if logo uploaded)
+  const profileUpdate: Record<string, any> = { full_name: fullName }
+  if (logoUrl) profileUpdate.avatar_url = logoUrl
+
   const { error: profileError } = await supabase
     .from("profiles")
-    .update({ full_name: fullName })
+    .update(profileUpdate)
     .eq("id", user.id)
 
   if (profileError) {
@@ -28,16 +45,19 @@ export async function updateCompanyProfile(formData: FormData) {
   }
 
   // 2. Update companies table
+  const companyUpdate: Record<string, any> = {
+    company_name: companyName,
+    industry,
+    client_type: clientType,
+    website,
+    fiscal_id: fiscalId,
+    phone,
+  }
+  if (logoUrl) companyUpdate.logo_url = logoUrl
+
   const { data, error } = await supabase
     .from("companies")
-    .update({
-      company_name: companyName,
-      industry,
-      client_type: clientType,
-      website,
-      fiscal_id: fiscalId,
-      phone,
-    })
+    .update(companyUpdate)
     .eq("id", user.id)
     .select()
 
@@ -50,20 +70,13 @@ export async function updateCompanyProfile(formData: FormData) {
     // Row doesn't exist yet — insert it
     const { error: insertError } = await supabase
       .from("companies")
-      .insert({
-        id: user.id,
-        company_name: companyName,
-        industry,
-        client_type: clientType,
-        website,
-        fiscal_id: fiscalId,
-        phone,
-      })
+      .insert({ id: user.id, ...companyUpdate })
     if (insertError) {
       console.error("Error inserting company profile:", insertError)
       return { error: insertError.message }
     }
   }
 
+  revalidatePath("/dashboard/client/profile")
   return { success: true }
 }

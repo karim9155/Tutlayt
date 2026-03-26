@@ -9,7 +9,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { updateCompanyProfile } from "@/app/dashboard/client/profile/actions"
-import { Loader2, Building2, CreditCard, CheckCircle2, XCircle, UserCircle } from "lucide-react"
+import { Loader2, Building2, CreditCard, CheckCircle2, XCircle, UserCircle, Camera } from "lucide-react"
 
 interface ClientProfileFormProps {
   profile: any
@@ -19,10 +19,12 @@ interface ClientProfileFormProps {
 export function ClientProfileForm({ profile, company }: ClientProfileFormProps) {
   const router = useRouter()
   const formRef = useRef<HTMLFormElement>(null)
+  const logoInputRef = useRef<HTMLInputElement>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState("personal")
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [logoPreview, setLogoPreview] = useState<string | null>(company?.logo_url || null)
 
   const tabs = ["personal", "organization", "billing"]
   const currentIndex = tabs.indexOf(activeTab)
@@ -106,6 +108,49 @@ export function ClientProfileForm({ profile, company }: ClientProfileFormProps) 
           <CardContent className="pt-6">
             {/* Personal Tab */}
             <div className={activeTab === "personal" ? "block space-y-6" : "hidden"}>
+              {/* Logo Upload */}
+              <div className="flex items-center gap-6 pb-4 border-b border-gray-100">
+                <div className="relative group">
+                  <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-md bg-gray-100 flex items-center justify-center">
+                    {logoPreview ? (
+                      <img src={logoPreview} alt="Logo" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-3xl font-bold text-gray-400">
+                        {(profile?.full_name || company?.company_name || "?")[0]?.toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => logoInputRef.current?.click()}
+                    className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Camera className="w-6 h-6 text-white" />
+                  </button>
+                </div>
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => logoInputRef.current?.click()}
+                    className="text-sm text-[var(--teal)] underline underline-offset-2 hover:text-[var(--teal-blue)]"
+                  >
+                    Upload logo
+                  </button>
+                  <p className="text-xs text-gray-500 mt-1">Upload a picture to help clients recognize you and book your services</p>
+                  <input
+                    ref={logoInputRef}
+                    type="file"
+                    name="logoFile"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) setLogoPreview(URL.createObjectURL(file))
+                    }}
+                  />
+                </div>
+              </div>
+
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="fullName" className="text-[var(--deep-navy)]">Full Name</Label>
