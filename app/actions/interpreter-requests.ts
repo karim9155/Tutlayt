@@ -46,6 +46,7 @@ export async function createInterpreterRequest(formData: FormData) {
   const timezone = formData.get("timezone") as string
   const languages = formData.get("languages") as string
   const subjectMatter = formData.get("subjectMatter") as string
+  const serviceType = formData.get("serviceType") as string
   const budget = parseFloat(formData.get("budget") as string)
   const description = formData.get("description") as string
   const meetingLink = formData.get("meetingLink") as string
@@ -69,6 +70,7 @@ export async function createInterpreterRequest(formData: FormData) {
     timezone,
     languages,
     subject_matter: subjectMatter,
+    service_type: serviceType,
     budget,
     currency: 'TND',
     description,

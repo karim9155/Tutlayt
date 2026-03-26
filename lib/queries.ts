@@ -1,6 +1,6 @@
 import { SupabaseClient } from "@supabase/supabase-js"
 
-export async function getInterpreters(supabase: SupabaseClient, filters: { city?: string, language?: string, specialization?: string, name?: string }) {
+export async function getInterpreters(supabase: SupabaseClient, filters: { city?: string, language?: string, specialization?: string, name?: string, min_rate?: string, max_rate?: string, service?: string }) {
   let query = supabase
     .from('interpreters')
     .select(`
@@ -23,6 +23,18 @@ export async function getInterpreters(supabase: SupabaseClient, filters: { city?
 
   if (filters.specialization) {
     query = query.contains('specializations', [filters.specialization])
+  }
+
+  if (filters.service) {
+    query = query.contains('services', [filters.service])
+  }
+
+  if (filters.min_rate) {
+    query = query.gte('daily_rate', parseFloat(filters.min_rate))
+  }
+
+  if (filters.max_rate) {
+    query = query.lte('daily_rate', parseFloat(filters.max_rate))
   }
 
   // Only show verified interpreters who have completed their documentation

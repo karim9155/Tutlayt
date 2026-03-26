@@ -14,6 +14,8 @@ import { updateProfile } from "@/app/dashboard/interpreter/profile/actions"
 import { toast } from "sonner"
 import { Loader2, CheckCircle2, Plus, Trash2, Camera } from "lucide-react"
 import { TagInput } from "@/components/ui/tag-input"
+import { FIELDS_OF_WORK } from "@/lib/fields-of-work"
+import { SERVICES } from "@/lib/services"
 
 interface InterpreterProfileFormProps {
   profile: any
@@ -35,6 +37,20 @@ export function InterpreterProfileForm({ profile, interpreter }: InterpreterProf
   const [primaryExpertise, setPrimaryExpertise]     = useState<string[]>(interpreter?.primary_expertise || [])
   const [secondaryExpertise, setSecondaryExpertise] = useState<string[]>(interpreter?.secondary_expertise || [])
   const [equipmentList, setEquipmentList] = useState<string[]>(interpreter?.equipment || [])
+
+  // "Other" free-text for fields of work
+  const knownFields = FIELDS_OF_WORK as readonly string[]
+  const [otherPrimary, setOtherPrimary]     = useState(() => (interpreter?.primary_expertise   || []).filter((f: string) => !knownFields.includes(f)).join(", "))
+  const [otherSecondary, setOtherSecondary] = useState(() => (interpreter?.secondary_expertise || []).filter((f: string) => !knownFields.includes(f)).join(", "))
+
+  function toggleField(field: string, list: string[], setList: (v: string[]) => void) {
+    setList(list.includes(field) ? list.filter(f => f !== field) : [...list, field])
+  }
+
+  function mergeOther(checked: string[], otherText: string): string[] {
+    const extras = otherText.split(",").map(s => s.trim()).filter(Boolean)
+    return [...checked, ...extras]
+  }
 
   // Re-sync array state after router.refresh() delivers new interpreter props
   useEffect(() => {
@@ -103,8 +119,8 @@ export function InterpreterProfileForm({ profile, interpreter }: InterpreterProf
     formData.set("languagesA", languagesA.join(","))
     formData.set("languagesB", languagesB.join(","))
     formData.set("languagesC", languagesC.join(","))
-    formData.set("primaryExpertise", primaryExpertise.join(","))
-    formData.set("secondaryExpertise", secondaryExpertise.join(","))
+    formData.set("primaryExpertise", mergeOther(primaryExpertise, otherPrimary).join(","))
+    formData.set("secondaryExpertise", mergeOther(secondaryExpertise, otherSecondary).join(","))
     formData.set("equipment", equipmentList.join(","))
     
     try {
@@ -421,21 +437,15 @@ export function InterpreterProfileForm({ profile, interpreter }: InterpreterProf
                 <div className="space-y-2">
                   <Label className="text-[var(--deep-navy)] font-semibold">Services Offered</Label>
                   <div className="grid grid-cols-2 gap-3">
-                    {[
-                      { id: "svc_interpretation", name: "services", value: "interpretation", label: "Interpretation" },
-                      { id: "svc_translation", name: "services", value: "translation", label: "Translation" },
-                      { id: "svc_sworn_translation", name: "services", value: "sworn_translation", label: "Sworn Translation" },
-                      { id: "svc_proofreading", name: "services", value: "proofreading", label: "Proofreading" },
-                      { id: "svc_editing", name: "services", value: "editing", label: "Editing" },
-                    ].map(svc => (
-                      <div key={svc.id} className="flex items-center space-x-2">
+                    {SERVICES.map(svc => (
+                      <div key={svc.value} className="flex items-center space-x-2">
                         <Checkbox
-                          id={svc.id}
-                          name={svc.name}
+                          id={`svc_${svc.value}`}
+                          name="services"
                           value={svc.value}
                           defaultChecked={Array.isArray(interpreter?.services) && interpreter.services.includes(svc.value)}
                         />
-                        <Label htmlFor={svc.id} className="text-[var(--deep-navy)]">{svc.label}</Label>
+                        <Label htmlFor={`svc_${svc.value}`} className="text-[var(--deep-navy)]">{svc.label}</Label>
                       </div>
                     ))}
                   </div>
@@ -456,29 +466,53 @@ export function InterpreterProfileForm({ profile, interpreter }: InterpreterProf
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="primaryExpertise" className="text-[var(--deep-navy)]">Primary Subject Matter Expertise</Label>
-                  <TagInput 
-                    key={`pe-${(interpreter?.primary_expertise || []).join(",")}`}
-                    id="primaryExpertise" 
-                    name="primaryExpertise" 
-                    placeholder="e.g. Legal, Medical, Finance (Press Enter)"
-                    defaultTags={primaryExpertise}
-                    onTagsChange={setPrimaryExpertise}
-                    className="border-gray-200 focus-within:border-[var(--teal)] focus-within:ring-[var(--teal)] rounded-lg bg-[var(--azureish-white)]/50"
-                  />
+                  <Label className="text-[var(--deep-navy)]">Primary Fields of Work</Label>
+                  <div className="grid grid-cols-2 gap-2 p-3 border border-gray-200 rounded-lg bg-[var(--azureish-white)]/50">
+                    {FIELDS_OF_WORK.map((field) => (
+                      <div key={field} className="flex items-center gap-2">
+                        <Checkbox
+                          id={`pe-${field}`}
+                          checked={primaryExpertise.includes(field)}
+                          onCheckedChange={() => toggleField(field, primaryExpertise, setPrimaryExpertise)}
+                        />
+                        <label htmlFor={`pe-${field}`} className="text-sm cursor-pointer">{field}</label>
+                      </div>
+                    ))}
+                    <div className="col-span-2 flex items-center gap-2 mt-1">
+                      <span className="text-sm text-gray-500 whitespace-nowrap">Other:</span>
+                      <Input
+                        placeholder="e.g. Veterinary, Space..."
+                        value={otherPrimary}
+                        onChange={(e) => setOtherPrimary(e.target.value)}
+                        className="h-8 border-gray-200 focus:border-[var(--teal)] focus:ring-[var(--teal)] rounded-lg"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="secondaryExpertise" className="text-[var(--deep-navy)]">Secondary Subject Matter Expertise</Label>
-                  <TagInput 
-                    key={`se-${(interpreter?.secondary_expertise || []).join(",")}`}
-                    id="secondaryExpertise" 
-                    name="secondaryExpertise" 
-                    placeholder="e.g. Engineering, Marketing (Press Enter)"
-                    defaultTags={secondaryExpertise}
-                    onTagsChange={setSecondaryExpertise}
-                    className="border-gray-200 focus-within:border-[var(--teal)] focus-within:ring-[var(--teal)] rounded-lg bg-[var(--azureish-white)]/50"
-                  />
+                  <Label className="text-[var(--deep-navy)]">Secondary Fields of Work</Label>
+                  <div className="grid grid-cols-2 gap-2 p-3 border border-gray-200 rounded-lg bg-[var(--azureish-white)]/50">
+                    {FIELDS_OF_WORK.map((field) => (
+                      <div key={field} className="flex items-center gap-2">
+                        <Checkbox
+                          id={`se-${field}`}
+                          checked={secondaryExpertise.includes(field)}
+                          onCheckedChange={() => toggleField(field, secondaryExpertise, setSecondaryExpertise)}
+                        />
+                        <label htmlFor={`se-${field}`} className="text-sm cursor-pointer">{field}</label>
+                      </div>
+                    ))}
+                    <div className="col-span-2 flex items-center gap-2 mt-1">
+                      <span className="text-sm text-gray-500 whitespace-nowrap">Other:</span>
+                      <Input
+                        placeholder="e.g. Veterinary, Space..."
+                        value={otherSecondary}
+                        onChange={(e) => setOtherSecondary(e.target.value)}
+                        className="h-8 border-gray-200 focus:border-[var(--teal)] focus:ring-[var(--teal)] rounded-lg"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-2">

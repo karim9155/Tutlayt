@@ -24,14 +24,10 @@ import {
   Calendar, Globe, Filter, ChevronDown, ChevronUp, ShieldCheck, X, Clock, Languages
 } from "lucide-react"
 import { format } from "date-fns"
+import { FIELDS_OF_WORK } from "@/lib/fields-of-work"
+import { SERVICES } from "@/lib/services"
 
-const SERVICE_OPTIONS = [
-  { value: "interpretation", label: "Interpretation" },
-  { value: "translation", label: "Translation" },
-  { value: "sworn_translation", label: "Sworn Translation" },
-  { value: "proofreading", label: "Proofreading" },
-  { value: "editing", label: "Editing" },
-] as const
+const SERVICE_OPTIONS = SERVICES
 
 interface RequestAssignmentModalProps {
   request: any
@@ -53,6 +49,7 @@ export function RequestAssignmentModal({ request, interpreters }: RequestAssignm
   const [maxDailyRate, setMaxDailyRate] = useState("")
   const [maxRatePerWord, setMaxRatePerWord] = useState("")
   const [languageFilter, setLanguageFilter] = useState("")
+  const [fieldFilter, setFieldFilter] = useState("")
   const [availableOnly, setAvailableOnly] = useState(false)
   const [sortBy, setSortBy] = useState<string>("name")
 
@@ -128,7 +125,7 @@ export function RequestAssignmentModal({ request, interpreters }: RequestAssignm
 
   const isOverBudget = calculatedPrice > parseFloat(request.budget)
 
-  const hasActiveFilters = selectedServices.length > 0 || swornOnly || maxHourlyRate || maxDailyRate || maxRatePerWord || languageFilter || availableOnly
+  const hasActiveFilters = selectedServices.length > 0 || swornOnly || maxHourlyRate || maxDailyRate || maxRatePerWord || languageFilter || fieldFilter || availableOnly
 
   function clearFilters() {
     setSelectedServices([])
@@ -137,6 +134,7 @@ export function RequestAssignmentModal({ request, interpreters }: RequestAssignm
     setMaxDailyRate("")
     setMaxRatePerWord("")
     setLanguageFilter("")
+    setFieldFilter("")
     setAvailableOnly(false)
     setSortBy("name")
   }
@@ -166,6 +164,15 @@ export function RequestAssignmentModal({ request, interpreters }: RequestAssignm
         (Array.isArray(i.languages_c) && i.languages_c.some((l: string) => l.toLowerCase().includes(q))) ||
         (Array.isArray(i.primary_expertise) && i.primary_expertise.some((e: string) => e.toLowerCase().includes(q))) ||
         (Array.isArray(i.secondary_expertise) && i.secondary_expertise.some((e: string) => e.toLowerCase().includes(q)))
+      )
+    }
+
+    // Field of work filter
+    if (fieldFilter) {
+      result = result.filter((i: any) =>
+        (Array.isArray(i.specializations) && i.specializations.includes(fieldFilter)) ||
+        (Array.isArray(i.primary_expertise) && i.primary_expertise.includes(fieldFilter)) ||
+        (Array.isArray(i.secondary_expertise) && i.secondary_expertise.includes(fieldFilter))
       )
     }
 
@@ -242,7 +249,7 @@ export function RequestAssignmentModal({ request, interpreters }: RequestAssignm
     })
 
     return result
-  }, [interpreters, searchQuery, selectedServices, swornOnly, maxHourlyRate, maxDailyRate, maxRatePerWord, languageFilter, availableOnly, sortBy, availabilityMap])
+  }, [interpreters, searchQuery, selectedServices, swornOnly, maxHourlyRate, maxDailyRate, maxRatePerWord, languageFilter, fieldFilter, availableOnly, sortBy, availabilityMap])
 
   // Check if the suggested interpreter exists
   const suggestedInterpreter = request.suggested_interpreter
@@ -378,7 +385,7 @@ export function RequestAssignmentModal({ request, interpreters }: RequestAssignm
               Filters
               {hasActiveFilters && (
                 <Badge className="bg-[var(--teal)] text-white ml-1 px-1.5 py-0 text-xs h-5">
-                  {[selectedServices.length > 0, swornOnly, maxHourlyRate, maxDailyRate, maxRatePerWord, languageFilter, availableOnly].filter(Boolean).length}
+                  {[selectedServices.length > 0, swornOnly, maxHourlyRate, maxDailyRate, maxRatePerWord, languageFilter, fieldFilter, availableOnly].filter(Boolean).length}
                 </Badge>
               )}
               {showFilters ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
@@ -428,6 +435,22 @@ export function RequestAssignmentModal({ request, interpreters }: RequestAssignm
                     ))}
                   </datalist>
                 </div>
+              </div>
+
+              {/* Field of Work */}
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-gray-600 uppercase tracking-wide">Field of Work</Label>
+                <Select value={fieldFilter || "__all__"} onValueChange={(v) => setFieldFilter(v === "__all__" ? "" : v)}>
+                  <SelectTrigger className="h-8 text-sm">
+                    <SelectValue placeholder="All fields" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">All fields</SelectItem>
+                    {FIELDS_OF_WORK.map((field) => (
+                      <SelectItem key={field} value={field}>{field}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Services */}

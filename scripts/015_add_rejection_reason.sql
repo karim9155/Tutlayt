@@ -4,3 +4,4 @@ ADD COLUMN IF NOT EXISTS rejection_reason TEXT;
 
 ALTER TABLE public.interpreters 
 ADD COLUMN IF NOT EXISTS rejection_reason TEXT;
+ 

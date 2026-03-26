@@ -6,7 +6,7 @@ import { PaginationControls } from "@/components/pagination-controls"
 
 const ITEMS_PER_PAGE = 5
 
-export default async function DashboardSearchPage({ searchParams }: { searchParams: Promise<{ city?: string, language?: string, specialization?: string, page?: string }> }) {
+export default async function DashboardSearchPage({ searchParams }: { searchParams: Promise<{ city?: string, language?: string, specialization?: string, page?: string, min_rate?: string, max_rate?: string, service?: string }> }) {
   const filters = await searchParams
   const currentPage = Math.max(1, parseInt(filters.page || "1", 10))
   const supabase = await createClient()
@@ -110,6 +110,9 @@ export default async function DashboardSearchPage({ searchParams }: { searchPara
               city: filters.city,
               language: filters.language,
               specialization: filters.specialization,
+              min_rate: filters.min_rate,
+              max_rate: filters.max_rate,
+              service: filters.service,
             }}
           />
         </div>

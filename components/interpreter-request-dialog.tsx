@@ -28,6 +28,8 @@ import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
 import { Loader2, Upload, CheckCircle2, AlertCircle, UserSearch } from "lucide-react"
 import Link from "next/link"
+import { FIELDS_OF_WORK } from "@/lib/fields-of-work"
+import { SERVICES } from "@/lib/services"
 
 interface InterpreterRequestDialogProps {
   documentsVerified?: boolean
@@ -41,6 +43,8 @@ export function InterpreterRequestDialog({ documentsVerified = false, children }
   const [uploading, setUploading] = useState(false)
   const [showErrorAlert, setShowErrorAlert] = useState(false)
   const [showSuccessAlert, setShowSuccessAlert] = useState(false)
+  const [subjectMatterValue, setSubjectMatterValue] = useState("Legal")
+  const [otherFieldText, setOtherFieldText] = useState("")
 
   function handleRequestClick() {
     if (!documentsVerified) {
@@ -156,7 +160,7 @@ export function InterpreterRequestDialog({ documentsVerified = false, children }
             variant="secondary"
             className="w-full justify-start bg-white/10 text-white hover:bg-white/20 border-0 h-12"
           >
-            <UserSearch className="mr-2 h-4 w-4" /> Request an Interpreter
+            <UserSearch className="mr-2 h-4 w-4" /> Request Services
           </Button>
         )}
       </div>
@@ -167,7 +171,7 @@ export function InterpreterRequestDialog({ documentsVerified = false, children }
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <UserSearch className="h-5 w-5 text-[var(--teal)]" />
-              Request an Interpreter
+              Request Services
             </DialogTitle>
             <DialogDescription>
               Tell us what you need and our team will find the best interpreter for you.
@@ -193,18 +197,37 @@ export function InterpreterRequestDialog({ documentsVerified = false, children }
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="req-subjectMatter">Subject Matter</Label>
-                <Select name="subjectMatter" defaultValue="General">
-                  <SelectTrigger><SelectValue placeholder="Select subject" /></SelectTrigger>
+                <Label htmlFor="req-subjectMatter">Field of Work</Label>
+                <input type="hidden" name="subjectMatter" value={subjectMatterValue === "Other" ? otherFieldText : subjectMatterValue} />
+                <Select value={subjectMatterValue} onValueChange={setSubjectMatterValue}>
+                  <SelectTrigger><SelectValue placeholder="Select field" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="General">General</SelectItem>
-                    <SelectItem value="Business / Trade">Business / Trade</SelectItem>
-                    <SelectItem value="Medical">Medical</SelectItem>
-                    <SelectItem value="Legal">Legal</SelectItem>
-                    <SelectItem value="Technical">Technical</SelectItem>
+                    {FIELDS_OF_WORK.map((field) => (
+                      <SelectItem key={field} value={field}>{field}</SelectItem>
+                    ))}
+                    <SelectItem value="Other">Other</SelectItem>
                   </SelectContent>
                 </Select>
+                {subjectMatterValue === "Other" && (
+                  <Input
+                    placeholder="Please specify..."
+                    value={otherFieldText}
+                    onChange={(e) => setOtherFieldText(e.target.value)}
+                  />
+                )}
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Service Type</Label>
+              <Select name="serviceType" defaultValue="interpretation">
+                <SelectTrigger><SelectValue placeholder="Select service" /></SelectTrigger>
+                <SelectContent>
+                  {SERVICES.map((svc) => (
+                    <SelectItem key={svc.value} value={svc.value}>{svc.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
