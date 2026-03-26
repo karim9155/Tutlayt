@@ -137,6 +137,14 @@ export default async function AdminRequestsPage({ searchParams }: { searchParams
                       <DollarSign className="w-4 h-4 text-gray-400" />
                       <span className="text-gray-600 font-medium">Budget: {request.budget} {request.currency}</span>
                     </div>
+                    {['assigned', 'fulfilled', 'declined'].includes(request.status) && (
+                      <div className="flex items-center gap-2">
+                        <User className="w-4 h-4 text-gray-400" />
+                        <span className="text-gray-600 font-medium">
+                          {(request.assigned_interpreter as any)?.full_name || '—'}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex flex-wrap items-center gap-4">
