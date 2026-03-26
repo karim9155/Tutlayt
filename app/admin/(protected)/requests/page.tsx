@@ -104,17 +104,9 @@ export default async function AdminRequestsPage({ searchParams }: { searchParams
                         {format(new Date(request.created_at), "dd MMM yyyy, HH:mm")}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {request.assigned_interpreter_name && (
-                        <span className="text-sm text-blue-700 font-medium flex items-center gap-1">
-                          <User className="w-3.5 h-3.5" />
-                          {request.assigned_interpreter_name}
-                        </span>
-                      )}
-                      <Badge className={`${statusColors[request.status] || 'bg-gray-100 text-gray-600'} border-none`}>
-                        {statusLabels[request.status] || request.status}
-                      </Badge>
-                    </div>
+                    <Badge className={`${statusColors[request.status] || 'bg-gray-100 text-gray-600'} border-none`}>
+                      {statusLabels[request.status] || request.status}
+                    </Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4 text-sm">
@@ -137,12 +129,6 @@ export default async function AdminRequestsPage({ searchParams }: { searchParams
                       <DollarSign className="w-4 h-4 text-gray-400" />
                       <span className="text-gray-600 font-medium">Budget: {request.budget} {request.currency}</span>
                     </div>
-                    {['assigned', 'fulfilled', 'declined'].includes(request.status) && request.assigned_interpreter_name && (
-                      <div className="flex items-center gap-2">
-                        <User className="w-4 h-4 text-gray-400" />
-                        <span className="text-gray-600 font-medium">{request.assigned_interpreter_name}</span>
-                      </div>
-                    )}
                   </div>
 
                   <div className="flex flex-wrap items-center gap-4">
@@ -174,11 +160,24 @@ export default async function AdminRequestsPage({ searchParams }: { searchParams
                       </div>
                     )}
                     {request.assigned_interpreter && (
-                      <div className="flex items-center gap-2 text-blue-600">
+                      <div className={`flex items-center gap-2 ${
+                        request.status === 'fulfilled' ? 'text-green-600' :
+                        request.status === 'declined' ? 'text-red-500' :
+                        'text-blue-600'
+                      }`}>
                         <User className="w-4 h-4" />
-                        <span>Assigned: <span className="font-medium">{(request.assigned_interpreter as any)?.full_name}</span></span>
+                        <span>
+                          {request.status === 'fulfilled' ? 'Accepted by' :
+                           request.status === 'declined' ? 'Declined by' :
+                           'Assigned'}:{' '}
+                          <span className="font-medium">{(request.assigned_interpreter as any)?.full_name}</span>
+                        </span>
                         {(request.assigned_interpreter as any)?.hourly_rate && (
-                          <span className="text-xs bg-blue-50 px-2 py-0.5 rounded">
+                          <span className={`text-xs px-2 py-0.5 rounded ${
+                            request.status === 'fulfilled' ? 'bg-green-50' :
+                            request.status === 'declined' ? 'bg-red-50' :
+                            'bg-blue-50'
+                          }`}>
                             {(request.assigned_interpreter as any).hourly_rate} TND/hr
                           </span>
                         )}

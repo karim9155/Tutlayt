@@ -393,25 +393,27 @@ export async function getInterpreterRequests() {
       ? supabase.from("profiles").select("id, email").in("id", clientIds)
       : { data: [] },
     interpreterIds.length > 0
-      ? supabase.from("profiles").select("id, company_name, full_name").in("id", interpreterIds)
+      ? supabase.from("interpreters").select("id, full_name, hourly_rate").in("id", interpreterIds)
       : { data: [] },
     clientIds.length > 0
       ? supabase.from("companies").select("id, company_name").in("id", clientIds)
       : { data: [] },
     bookingIds.length > 0
-      ? supabase.from("bookings").select("id, status").in("id", bookingIds)
+      ? supabase.from("bookings").select("id, status, interpreter_id").in("id", bookingIds)
       : { data: [] },
   ])
 
   const profilesMap = new Map((profilesResult.data || []).map((p: any) => [p.id, p]))
-  const interpretersMap = new Map((interpretersResult.data || []).map((i: any) => [i.id, { ...i, full_name: i.company_name || i.full_name || 'Unknown' }]))
   const companiesMap = new Map((companiesResult.data || []).map((c: any) => [c.id, c]))
   const bookingsMap = new Map((bookingsResult.data || []).map((b: any) => [b.id, b]))
 
-  console.log("[getInterpreterRequests] interpreterIds:", interpreterIds)
-  console.log("[getInterpreterRequests] interpretersResult data:", JSON.stringify(interpretersResult.data))
-  console.log("[getInterpreterRequests] interpretersResult error:", (interpretersResult as any).error)
-  console.log("[getInterpreterRequests] sample request assigned_interpreter_id:", requests[0]?.assigned_interpreter_id)
+  // Collect all interpreter IDs including those from linked bookings
+  const bookingInterpreterIds = (bookingsResult.data || []).map((b: any) => b.interpreter_id).filter(Boolean)
+  const allInterpreterIds = [...new Set([...interpreterIds, ...bookingInterpreterIds])]
+  const { data: allInterpreters } = allInterpreterIds.length > 0
+    ? await supabase.from("interpreters").select("id, full_name, hourly_rate").in("id", allInterpreterIds)
+    : { data: [] }
+  const interpretersMap = new Map((allInterpreters || []).map((i: any) => [i.id, i]))
 
   // Attach related data to each request, using booking status to override when applicable
   const enrichedRequests = requests.map((r: any) => {
@@ -424,18 +426,15 @@ export async function getInterpreterRequests() {
     if (linkedBooking?.status === 'accepted') effectiveStatus = 'fulfilled'
     else if (linkedBooking?.status === 'declined') effectiveStatus = 'declined'
 
-    const assignedProfile = interpretersMap.get(r.assigned_interpreter_id)
-    const assignedName = assignedProfile
-      ? (assignedProfile.company_name || assignedProfile.full_name || null)
-      : null
+    // Resolve interpreter: prefer assigned_interpreter_id, fall back to booking's interpreter_id
+    const interpreterIdToShow = r.assigned_interpreter_id || linkedBooking?.interpreter_id || null
 
     return {
       ...r,
       status: effectiveStatus,
-      assigned_interpreter_name: assignedName,
       client: profile ? { ...profile, company_name: company?.company_name || profile?.email || 'Unknown Client' } : null,
       suggested_interpreter: interpretersMap.get(r.suggested_interpreter_id) || null,
-      assigned_interpreter: interpretersMap.get(r.assigned_interpreter_id) || null,
+      assigned_interpreter: interpreterIdToShow ? interpretersMap.get(interpreterIdToShow) || null : null,
     }
   })
 
