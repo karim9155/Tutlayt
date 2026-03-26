@@ -159,8 +159,6 @@ export async function updateBookingStatus(bookingId: string, status: 'accepted' 
         .from("interpreter_requests")
         .update({
           status: 'declined',
-          assigned_interpreter_id: null,
-          booking_id: null,
           updated_at: new Date().toISOString(),
         })
         .eq("id", linkedRequestId)
