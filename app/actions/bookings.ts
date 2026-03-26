@@ -39,11 +39,11 @@ export async function createBooking(formData: FormData) {
       return { error: "You must sign all required documents before booking. Please visit your dashboard to complete document signing." }
     }
 
-    // Check client has sufficient balance to cover the booking price
-    const bookingPrice = parseFloat(formData.get("price") as string)
+    // Check client has sufficient balance to cover the interpreter's daily rate
+    const dailyRate = parseFloat(formData.get("dailyRate") as string)
     const clientBalance = parseFloat(company?.balance ?? 0)
-    if (!isNaN(bookingPrice) && clientBalance < bookingPrice) {
-      return { error: `Insufficient balance. Current balance: ${clientBalance} TND. Required: ${bookingPrice} TND.` }
+    if (!isNaN(dailyRate) && dailyRate > 0 && clientBalance < dailyRate) {
+      return { error: `Insufficient balance. Current balance: ${clientBalance} TND. Required: ${dailyRate} TND.` }
     }
   }
   // --- End document signing guard ---
